@@ -6,8 +6,13 @@ struct LumenApp: App {
 
     var body: some Scene {
         MenuBarExtra("Lumen", systemImage: "rays") {
-            Button("Test capture (or hold ⌃⌥)") {
-                appDelegate.spike.triggerCapture()
+            Text("Hold ⌃⌥ and ask about your screen")
+            Divider()
+            Button("Set Anthropic API Key…") {
+                appDelegate.assistant.promptForAPIKey()
+            }
+            Button("Hide Overlays") {
+                appDelegate.assistant.hideOverlays()
             }
             Divider()
             Button("Quit Lumen") {
@@ -19,9 +24,9 @@ struct LumenApp: App {
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    let spike = SpikeController()
+    let assistant = AssistantController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        spike.start()
+        assistant.start()
     }
 }

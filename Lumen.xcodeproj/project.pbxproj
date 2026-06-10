@@ -7,20 +7,32 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		55F4E31433B1D0055D8E25AD /* SpikeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0C1EBDCF6779354D23422BB /* SpikeController.swift */; };
+		0DC62F05662D7B90FD628714 /* PointerOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5008652FC299845E0BC82123 /* PointerOverlay.swift */; };
+		11734D7722DDD01CB3B58183 /* OverlayPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4DF0975FE6476F287403E55 /* OverlayPanel.swift */; };
+		1587668F604E2A37E27990D2 /* PointParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1391E594655421C6F79C479C /* PointParser.swift */; };
 		773FA1361E95D40DD6310993 /* LumenApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9BED7C9127526606A596340 /* LumenApp.swift */; };
-		7E0148910AB51ADFB757A6B4 /* HotkeyMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00787B998BA6726C4031F52F /* HotkeyMonitor.swift */; };
-		96C10C0155B7ACD52FC74873 /* OverlayPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BABC5F8A82C8763E90A3BF3 /* OverlayPanel.swift */; };
-		D8917CF8BC4CBA69AB3B1BF9 /* ScreenCapturer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F6B227D52FC7E6892BB7F93 /* ScreenCapturer.swift */; };
+		7CCDCC6B55512A7B0FD6EB6A /* EventLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E6DC07551B9EDCE2F4D7CA /* EventLog.swift */; };
+		8CBEB53B14C1D46647F16808 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82CA2416103C806FC560933E /* KeychainStore.swift */; };
+		ADCC7A9DD14801912930EAE1 /* Transcriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 997F5D73AAAE65A3B0335B1B /* Transcriber.swift */; };
+		B85FA0CB2B8164AFFBB928BC /* HotkeyMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A13CDE23B9C1246F4A4D6F31 /* HotkeyMonitor.swift */; };
+		B9DD406AF0A31BD3CAE427AF /* AssistantController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B52B4AC2333DFBA0C08DB196 /* AssistantController.swift */; };
+		C8CBAB7B72615D0675D19B07 /* ScreenCapturer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1ACBE10DE119731821C21A /* ScreenCapturer.swift */; };
+		F983BC5FBEB94B06CAB69892 /* Reasoner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 027B2856B9E68A028D97F9ED /* Reasoner.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		00787B998BA6726C4031F52F /* HotkeyMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyMonitor.swift; sourceTree = "<group>"; };
-		1BABC5F8A82C8763E90A3BF3 /* OverlayPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayPanel.swift; sourceTree = "<group>"; };
+		027B2856B9E68A028D97F9ED /* Reasoner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reasoner.swift; sourceTree = "<group>"; };
+		1391E594655421C6F79C479C /* PointParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointParser.swift; sourceTree = "<group>"; };
 		337A3269E47126DC851115EE /* Lumen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Lumen.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		9F6B227D52FC7E6892BB7F93 /* ScreenCapturer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCapturer.swift; sourceTree = "<group>"; };
+		5008652FC299845E0BC82123 /* PointerOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointerOverlay.swift; sourceTree = "<group>"; };
+		58E6DC07551B9EDCE2F4D7CA /* EventLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventLog.swift; sourceTree = "<group>"; };
+		82CA2416103C806FC560933E /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		997F5D73AAAE65A3B0335B1B /* Transcriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transcriber.swift; sourceTree = "<group>"; };
+		A13CDE23B9C1246F4A4D6F31 /* HotkeyMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyMonitor.swift; sourceTree = "<group>"; };
 		A9BED7C9127526606A596340 /* LumenApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LumenApp.swift; sourceTree = "<group>"; };
-		F0C1EBDCF6779354D23422BB /* SpikeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpikeController.swift; sourceTree = "<group>"; };
+		AA1ACBE10DE119731821C21A /* ScreenCapturer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCapturer.swift; sourceTree = "<group>"; };
+		B52B4AC2333DFBA0C08DB196 /* AssistantController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantController.swift; sourceTree = "<group>"; };
+		F4DF0975FE6476F287403E55 /* OverlayPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayPanel.swift; sourceTree = "<group>"; };
 		FB69623C5BC7D5FECD47DBA0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -33,6 +45,15 @@
 			);
 			sourceTree = "<group>";
 		};
+		3E933E68E627099B95BA1535 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				F4DF0975FE6476F287403E55 /* OverlayPanel.swift */,
+				5008652FC299845E0BC82123 /* PointerOverlay.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
 		70C838A3277A6AAF3F2B0484 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -41,25 +62,38 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		7BC8FE333078EB966A9F5B8A /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				58E6DC07551B9EDCE2F4D7CA /* EventLog.swift */,
+				A13CDE23B9C1246F4A4D6F31 /* HotkeyMonitor.swift */,
+				82CA2416103C806FC560933E /* KeychainStore.swift */,
+				1391E594655421C6F79C479C /* PointParser.swift */,
+				AA1ACBE10DE119731821C21A /* ScreenCapturer.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
 		9A87E38572968714465B9877 /* Lumen */ = {
 			isa = PBXGroup;
 			children = (
+				B52B4AC2333DFBA0C08DB196 /* AssistantController.swift */,
 				FB69623C5BC7D5FECD47DBA0 /* Info.plist */,
 				A9BED7C9127526606A596340 /* LumenApp.swift */,
-				ACFC90332EBFFE04A6B32F8F /* Spike */,
+				7BC8FE333078EB966A9F5B8A /* Core */,
+				A36ECEE980210EFD085D1AE8 /* Providers */,
+				3E933E68E627099B95BA1535 /* UI */,
 			);
 			path = Lumen;
 			sourceTree = "<group>";
 		};
-		ACFC90332EBFFE04A6B32F8F /* Spike */ = {
+		A36ECEE980210EFD085D1AE8 /* Providers */ = {
 			isa = PBXGroup;
 			children = (
-				00787B998BA6726C4031F52F /* HotkeyMonitor.swift */,
-				1BABC5F8A82C8763E90A3BF3 /* OverlayPanel.swift */,
-				9F6B227D52FC7E6892BB7F93 /* ScreenCapturer.swift */,
-				F0C1EBDCF6779354D23422BB /* SpikeController.swift */,
+				027B2856B9E68A028D97F9ED /* Reasoner.swift */,
+				997F5D73AAAE65A3B0335B1B /* Transcriber.swift */,
 			);
-			path = Spike;
+			path = Providers;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -117,11 +151,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7E0148910AB51ADFB757A6B4 /* HotkeyMonitor.swift in Sources */,
+				B9DD406AF0A31BD3CAE427AF /* AssistantController.swift in Sources */,
+				7CCDCC6B55512A7B0FD6EB6A /* EventLog.swift in Sources */,
+				B85FA0CB2B8164AFFBB928BC /* HotkeyMonitor.swift in Sources */,
+				8CBEB53B14C1D46647F16808 /* KeychainStore.swift in Sources */,
 				773FA1361E95D40DD6310993 /* LumenApp.swift in Sources */,
-				96C10C0155B7ACD52FC74873 /* OverlayPanel.swift in Sources */,
-				D8917CF8BC4CBA69AB3B1BF9 /* ScreenCapturer.swift in Sources */,
-				55F4E31433B1D0055D8E25AD /* SpikeController.swift in Sources */,
+				11734D7722DDD01CB3B58183 /* OverlayPanel.swift in Sources */,
+				1587668F604E2A37E27990D2 /* PointParser.swift in Sources */,
+				0DC62F05662D7B90FD628714 /* PointerOverlay.swift in Sources */,
+				F983BC5FBEB94B06CAB69892 /* Reasoner.swift in Sources */,
+				C8CBAB7B72615D0675D19B07 /* ScreenCapturer.swift in Sources */,
+				ADCC7A9DD14801912930EAE1 /* Transcriber.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
