@@ -1,0 +1,11 @@
+# Xcode
+xcuserdata/
+DerivedData/
+*.xcuserstate
+
+# Secrets — keys live in Keychain or local env, never in the repo
+.env
+*.local.xcconfig
+
+# macOS
+.DS_Store

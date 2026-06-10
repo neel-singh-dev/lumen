@@ -1,0 +1,27 @@
+name: Lumen
+options:
+  bundleIdPrefix: in.neelmani
+  deploymentTarget:
+    macOS: "15.0"
+  createIntermediateGroups: true
+
+targets:
+  Lumen:
+    type: application
+    platform: macOS
+    sources:
+      - Lumen
+    info:
+      path: Lumen/Info.plist
+      properties:
+        CFBundleDisplayName: Lumen
+        # Menu-bar-only app — no Dock icon, like Clicky.
+        LSUIElement: true
+        NSMicrophoneUsageDescription: "Lumen uses the microphone for push-to-talk voice questions."
+        NSSpeechRecognitionUsageDescription: "Lumen transcribes your voice on-device with Apple speech recognition. Audio never leaves this Mac."
+    settings:
+      base:
+        MARKETING_VERSION: 0.1.0
+        CURRENT_PROJECT_VERSION: 1
+        SWIFT_VERSION: 5.0
+        GENERATE_INFOPLIST_FILE: NO
