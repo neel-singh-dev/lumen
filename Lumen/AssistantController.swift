@@ -13,7 +13,20 @@ final class AssistantController {
     private let capturer = ScreenCapturer()
     private let transcriber = AppleSpeechTranscriber()
     private let log = EventLog()
-    private let reasoner: Reasoner = AnthropicReasoner()
+
+    /// Resolved per request so a provider switch in the menu takes effect
+    /// on the very next summon — including mid-demo hot-swaps.
+    private var reasoner: Reasoner {
+        switch ProviderSettings.kind {
+        case .anthropic:
+            return AnthropicReasoner()
+        case .openaiCompatible:
+            return OpenAICompatibleReasoner(
+                baseURL: ProviderSettings.baseURL,
+                model: ProviderSettings.model
+            )
+        }
+    }
 
     private var history: [Exchange] = []
     private var captureTask: Task<ScreenCapture?, Never>?
@@ -54,6 +67,42 @@ final class AssistantController {
            !field.stringValue.trimmingCharacters(in: .whitespaces).isEmpty {
             KeychainStore.save(field.stringValue.trimmingCharacters(in: .whitespaces), account: "anthropic")
             log.append("settings.api_key_set")
+        }
+    }
+
+    func promptForLocalProvider() {
+        let alert = NSAlert()
+        alert.messageText = "Local / OpenAI-compatible Provider"
+        alert.informativeText = """
+        Works with Ollama (default), LM Studio, or any OpenAI-compatible \
+        endpoint. For Ollama, pull a vision model first:  ollama pull qwen2.5vl
+        """
+        let container = NSView(frame: NSRect(x: 0, y: 0, width: 360, height: 86))
+        let urlLabel = NSTextField(labelWithString: "Base URL")
+        urlLabel.frame = NSRect(x: 0, y: 62, width: 360, height: 16)
+        let urlField = NSTextField(string: ProviderSettings.baseURL)
+        urlField.frame = NSRect(x: 0, y: 38, width: 360, height: 24)
+        urlField.placeholderString = "http://localhost:11434"
+        let modelLabel = NSTextField(labelWithString: "Model")
+        modelLabel.frame = NSRect(x: 0, y: 24, width: 360, height: 16)
+        let modelField = NSTextField(string: ProviderSettings.model)
+        modelField.frame = NSRect(x: 0, y: 0, width: 360, height: 24)
+        modelField.placeholderString = "qwen2.5vl"
+        container.addSubview(urlLabel)
+        container.addSubview(urlField)
+        container.addSubview(modelLabel)
+        container.addSubview(modelField)
+        alert.accessoryView = container
+        alert.addButton(withTitle: "Save")
+        alert.addButton(withTitle: "Cancel")
+        NSApp.activate(ignoringOtherApps: true)
+        if alert.runModal() == .alertFirstButtonReturn {
+            ProviderSettings.setLocal(
+                baseURL: urlField.stringValue.trimmingCharacters(in: .whitespaces),
+                model: modelField.stringValue.trimmingCharacters(in: .whitespaces)
+            )
+            UserDefaults.standard.set(ProviderKind.openaiCompatible.rawValue, forKey: ProviderSettings.kindKey)
+            log.append("settings.local_provider", ["model": ProviderSettings.model])
         }
     }
 

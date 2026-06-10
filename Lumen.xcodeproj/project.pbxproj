@@ -13,10 +13,12 @@
 		773FA1361E95D40DD6310993 /* LumenApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9BED7C9127526606A596340 /* LumenApp.swift */; };
 		7CCDCC6B55512A7B0FD6EB6A /* EventLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E6DC07551B9EDCE2F4D7CA /* EventLog.swift */; };
 		8CBEB53B14C1D46647F16808 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82CA2416103C806FC560933E /* KeychainStore.swift */; };
+		A9581F05F7D830A5B94A4F53 /* OpenAICompatibleReasoner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C121CB428012DD38B99D6A1 /* OpenAICompatibleReasoner.swift */; };
 		ADCC7A9DD14801912930EAE1 /* Transcriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 997F5D73AAAE65A3B0335B1B /* Transcriber.swift */; };
 		B85FA0CB2B8164AFFBB928BC /* HotkeyMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A13CDE23B9C1246F4A4D6F31 /* HotkeyMonitor.swift */; };
 		B9DD406AF0A31BD3CAE427AF /* AssistantController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B52B4AC2333DFBA0C08DB196 /* AssistantController.swift */; };
 		C8CBAB7B72615D0675D19B07 /* ScreenCapturer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1ACBE10DE119731821C21A /* ScreenCapturer.swift */; };
+		EA89A4E1BC58F2F83BCF4F18 /* ProviderSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3FCBEFA855437E1DC340AA9 /* ProviderSettings.swift */; };
 		F983BC5FBEB94B06CAB69892 /* Reasoner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 027B2856B9E68A028D97F9ED /* Reasoner.swift */; };
 /* End PBXBuildFile section */
 
@@ -26,12 +28,14 @@
 		337A3269E47126DC851115EE /* Lumen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Lumen.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5008652FC299845E0BC82123 /* PointerOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointerOverlay.swift; sourceTree = "<group>"; };
 		58E6DC07551B9EDCE2F4D7CA /* EventLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventLog.swift; sourceTree = "<group>"; };
+		7C121CB428012DD38B99D6A1 /* OpenAICompatibleReasoner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAICompatibleReasoner.swift; sourceTree = "<group>"; };
 		82CA2416103C806FC560933E /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		997F5D73AAAE65A3B0335B1B /* Transcriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transcriber.swift; sourceTree = "<group>"; };
 		A13CDE23B9C1246F4A4D6F31 /* HotkeyMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyMonitor.swift; sourceTree = "<group>"; };
 		A9BED7C9127526606A596340 /* LumenApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LumenApp.swift; sourceTree = "<group>"; };
 		AA1ACBE10DE119731821C21A /* ScreenCapturer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCapturer.swift; sourceTree = "<group>"; };
 		B52B4AC2333DFBA0C08DB196 /* AssistantController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantController.swift; sourceTree = "<group>"; };
+		D3FCBEFA855437E1DC340AA9 /* ProviderSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderSettings.swift; sourceTree = "<group>"; };
 		F4DF0975FE6476F287403E55 /* OverlayPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayPanel.swift; sourceTree = "<group>"; };
 		FB69623C5BC7D5FECD47DBA0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -90,6 +94,8 @@
 		A36ECEE980210EFD085D1AE8 /* Providers */ = {
 			isa = PBXGroup;
 			children = (
+				7C121CB428012DD38B99D6A1 /* OpenAICompatibleReasoner.swift */,
+				D3FCBEFA855437E1DC340AA9 /* ProviderSettings.swift */,
 				027B2856B9E68A028D97F9ED /* Reasoner.swift */,
 				997F5D73AAAE65A3B0335B1B /* Transcriber.swift */,
 			);
@@ -156,9 +162,11 @@
 				B85FA0CB2B8164AFFBB928BC /* HotkeyMonitor.swift in Sources */,
 				8CBEB53B14C1D46647F16808 /* KeychainStore.swift in Sources */,
 				773FA1361E95D40DD6310993 /* LumenApp.swift in Sources */,
+				A9581F05F7D830A5B94A4F53 /* OpenAICompatibleReasoner.swift in Sources */,
 				11734D7722DDD01CB3B58183 /* OverlayPanel.swift in Sources */,
 				1587668F604E2A37E27990D2 /* PointParser.swift in Sources */,
 				0DC62F05662D7B90FD628714 /* PointerOverlay.swift in Sources */,
+				EA89A4E1BC58F2F83BCF4F18 /* ProviderSettings.swift in Sources */,
 				F983BC5FBEB94B06CAB69892 /* Reasoner.swift in Sources */,
 				C8CBAB7B72615D0675D19B07 /* ScreenCapturer.swift in Sources */,
 				ADCC7A9DD14801912930EAE1 /* Transcriber.swift in Sources */,

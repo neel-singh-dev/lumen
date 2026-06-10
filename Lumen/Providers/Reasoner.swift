@@ -30,10 +30,10 @@ enum ReasonerError: LocalizedError {
     }
 }
 
-final class AnthropicReasoner: Reasoner {
-    static let defaultModel = "claude-opus-4-8"
-
-    private let systemPrompt = """
+/// The shared system prompt — provider-independent, so every Reasoner
+/// implementation speaks the same [POINT] protocol.
+enum LumenPrompt {
+    static let system = """
     You are Lumen, a screen-aware assistant living on the user's Mac. The user \
     holds a hotkey, asks a question by voice, and you see a screenshot of their \
     screen taken at that moment.
@@ -48,6 +48,10 @@ final class AnthropicReasoner: Reasoner {
     - Only point at things actually visible in the screenshot. At most 3 points.
     - If the question has nothing to do with the screen, just answer it.
     """
+}
+
+final class AnthropicReasoner: Reasoner {
+    static let defaultModel = "claude-opus-4-8"
 
     func stream(question: String, capture: ScreenCapture?, history: [Exchange]) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
@@ -125,7 +129,7 @@ final class AnthropicReasoner: Reasoner {
             "model": Self.defaultModel,
             "max_tokens": 1024,
             "stream": true,
-            "system": systemPrompt,
+            "system": LumenPrompt.system,
             "messages": messages,
         ]
     }

@@ -19,6 +19,9 @@ targets:
         LSUIElement: true
         NSMicrophoneUsageDescription: "Lumen uses the microphone for push-to-talk voice questions."
         NSSpeechRecognitionUsageDescription: "Lumen transcribes your voice on-device with Apple speech recognition. Audio never leaves this Mac."
+        # Allow plain-HTTP to localhost only — for the Ollama fully-local provider.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
     settings:
       base:
         MARKETING_VERSION: 0.1.0
