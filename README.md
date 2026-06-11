@@ -89,8 +89,10 @@ xcodegen generate
 open Lumen.xcodeproj    # ⌘R
 ```
 
-**Unsigned build (free Apple ID):** first launch via right-click → **Open** to
-clear Gatekeeper once; subsequent launches are normal.
+Builds sign with a personal Apple Development identity (`project.yml` sets the
+team), so TCC permission grants survive rebuilds. There's no notarization on a
+free Apple ID — if you run a **downloaded** zip instead of building from
+source, first launch is right-click → **Open** to clear Gatekeeper once.
 
 First run, grant four permissions: **Accessibility** (global hotkey + element
 grounding), **Screen Recording**, **Microphone**, **Speech Recognition**.
