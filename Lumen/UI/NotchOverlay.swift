@@ -199,15 +199,21 @@ struct NotchView: View {
     }
 
     /// At rest: exactly the hardware notch. Expanded: grown outward from it.
+    /// Active widths leave generous "ears" either side of the dead zone.
     private var bodyWidth: CGFloat {
         let base = model.notchSize.width
-        if model.showSettings { return max(410, base + 120) }
-        if model.transcriptVisible { return max(500, base + 160) }
+        if model.showSettings { return max(440, base + 220) }
+        if model.transcriptVisible { return max(520, base + 240) }
         switch model.phase {
         case .idle: return base
-        case .listening(let partial): return partial.isEmpty ? base + 60 : base + 260
-        case .thinking, .speaking, .answering: return base + 40
+        case .listening(let partial): return partial.isEmpty ? base + 200 : base + 360
+        case .thinking, .speaking, .answering: return base + 220
         }
+    }
+
+    /// Visible strip either side of the physical notch.
+    private var earWidth: CGFloat {
+        max(0, (bodyWidth - model.notchSize.width) / 2)
     }
 
     private var cornerRadius: CGFloat {
@@ -242,59 +248,48 @@ struct NotchView: View {
             .shadow(color: .black.opacity(isSlim ? 0 : 0.5), radius: 14, y: 6)
     }
 
-    // MARK: Status row
+    // MARK: Status row — Dynamic-Island ears.
+    // The center of this row is the HARDWARE notch (dead pixels), so
+    // content lives in the ears: label on the left, living icon on the
+    // right, never behind the housing.
 
     @ViewBuilder
     private var statusRow: some View {
-        HStack(spacing: 9) {
-            statusIcon
-            statusText
+        if isSlim {
+            Color.clear.frame(height: statusHeight)
+        } else {
+            HStack(spacing: 0) {
+                leftEar
+                    .padding(.leading, 16)
+                    .frame(width: earWidth, alignment: .leading)
+                Color.clear
+                    .frame(width: model.notchSize.width)
+                rightEar
+                    .padding(.trailing, 16)
+                    .frame(width: earWidth, alignment: .trailing)
+            }
+            .frame(height: statusHeight)
         }
-        .padding(.horizontal, isSlim ? 0 : 18)
-        .frame(height: statusHeight)
-        .frame(maxWidth: .infinity)
     }
 
     private var statusHeight: CGFloat {
-        isSlim ? model.notchSize.height : model.notchSize.height + 12
+        model.notchSize.height
     }
 
+    /// Left ear: what's happening, in words.
     @ViewBuilder
-    private var statusIcon: some View {
+    private var leftEar: some View {
         switch model.phase {
         case .idle:
             if expanded {
-                Image(systemName: "rays")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(accentGradient)
-            }
-        case .listening:
-            Image(systemName: "waveform")
-                .symbolEffect(.variableColor.iterative, options: .repeating)
-                .foregroundStyle(accentGradient)
-        case .thinking:
-            ProgressView().controlSize(.small).tint(.white)
-        case .speaking:
-            Image(systemName: "speaker.wave.2.fill")
-                .symbolEffect(.variableColor.iterative, options: .repeating)
-                .foregroundStyle(accentGradient)
-        case .answering:
-            Image(systemName: "ellipsis")
-                .symbolEffect(.variableColor.iterative, options: .repeating)
-                .foregroundStyle(accentGradient)
-        }
-    }
-
-    @ViewBuilder
-    private var statusText: some View {
-        switch model.phase {
-        case .idle:
-            if expanded {
-                Text("Lumen")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.white)
-                Spacer()
-                Circle().fill(.teal).frame(width: 5, height: 5)
+                HStack(spacing: 6) {
+                    Image(systemName: "rays")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(accentGradient)
+                    Text("Lumen")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white)
+                }
             }
         case .listening(let partial):
             Text(partial.isEmpty ? "Listening…" : partial)
@@ -302,19 +297,50 @@ struct NotchView: View {
                 .foregroundStyle(.white)
                 .lineLimit(1)
                 .truncationMode(.head)
-                .frame(maxWidth: .infinity, alignment: .leading)
         case .thinking:
             Text("Thinking…")
                 .font(.caption.weight(.medium))
-                .foregroundStyle(.white.opacity(0.85))
+                .foregroundStyle(.white.opacity(0.9))
         case .speaking:
             Text("Speaking")
                 .font(.caption.weight(.medium))
-                .foregroundStyle(.white.opacity(0.85))
+                .foregroundStyle(.white.opacity(0.9))
         case .answering:
             Text("Working")
                 .font(.caption.weight(.medium))
-                .foregroundStyle(.white.opacity(0.85))
+                .foregroundStyle(.white.opacity(0.9))
+        }
+    }
+
+    /// Right ear: the living indicator.
+    @ViewBuilder
+    private var rightEar: some View {
+        switch model.phase {
+        case .idle:
+            if expanded {
+                Circle().fill(.teal).frame(width: 6, height: 6)
+                    .shadow(color: .teal.opacity(0.8), radius: 3)
+            }
+        case .listening:
+            Image(systemName: "waveform")
+                .font(.body)
+                .symbolEffect(.variableColor.iterative, options: .repeating)
+                .foregroundStyle(accentGradient)
+        case .thinking:
+            Image(systemName: "sparkle")
+                .font(.body)
+                .symbolEffect(.pulse, options: .repeating)
+                .foregroundStyle(accentGradient)
+        case .speaking:
+            Image(systemName: "speaker.wave.2.fill")
+                .font(.body)
+                .symbolEffect(.variableColor.iterative, options: .repeating)
+                .foregroundStyle(accentGradient)
+        case .answering:
+            Image(systemName: "ellipsis")
+                .font(.body)
+                .symbolEffect(.variableColor.iterative, options: .repeating)
+                .foregroundStyle(accentGradient)
         }
     }
 

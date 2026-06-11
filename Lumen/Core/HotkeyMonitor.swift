@@ -7,9 +7,14 @@ import ApplicationServices
 /// which Lumen needs anyway for element-anchored pointing and agent actions.
 final class HotkeyMonitor {
     var onPushToTalkChanged: ((Bool) -> Void)?
+    /// Escape dismisses whatever Lumen is doing — mid-listen, mid-answer,
+    /// mid-narration.
+    var onEscape: (() -> Void)?
 
     private var globalMonitor: Any?
     private var localMonitor: Any?
+    private var globalKeyMonitor: Any?
+    private var localKeyMonitor: Any?
     private var isDown = false
 
     func start() {
@@ -24,6 +29,13 @@ final class HotkeyMonitor {
             self?.handle(flags: event.modifierFlags)
             return event
         }
+        globalKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            if event.keyCode == 53 { self?.onEscape?() }
+        }
+        localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            if event.keyCode == 53 { self?.onEscape?() }
+            return event
+        }
     }
 
     private func handle(flags: NSEvent.ModifierFlags) {
@@ -36,5 +48,7 @@ final class HotkeyMonitor {
     deinit {
         if let globalMonitor { NSEvent.removeMonitor(globalMonitor) }
         if let localMonitor { NSEvent.removeMonitor(localMonitor) }
+        if let globalKeyMonitor { NSEvent.removeMonitor(globalKeyMonitor) }
+        if let localKeyMonitor { NSEvent.removeMonitor(localKeyMonitor) }
     }
 }

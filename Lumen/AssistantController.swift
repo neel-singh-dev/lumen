@@ -85,6 +85,9 @@ final class AssistantController {
                 self?.finishListeningAndAnswer()
             }
         }
+        hotkey.onEscape = { [weak self] in
+            self?.hideOverlays()
+        }
         hotkey.start()
         log.append("app.start")
 
