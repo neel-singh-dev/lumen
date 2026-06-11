@@ -12,10 +12,38 @@ final class AppleSpeechTranscriber {
     private(set) var transcript = ""
 
     var onPartial: ((String) -> Void)?
+    var onError: ((Error) -> Void)?
 
     static func requestPermissions() {
         SFSpeechRecognizer.requestAuthorization { _ in }
         AVAudioApplication.requestRecordPermission { _ in }
+    }
+
+    /// Diagnostic snapshot of everything speech needs — logged on each
+    /// summon so permission failures are visible instead of silent.
+    func diagnostics() -> [String: String] {
+        let speechAuth: String
+        switch SFSpeechRecognizer.authorizationStatus() {
+        case .notDetermined: speechAuth = "notDetermined"
+        case .denied: speechAuth = "denied"
+        case .restricted: speechAuth = "restricted"
+        case .authorized: speechAuth = "authorized"
+        @unknown default: speechAuth = "unknown"
+        }
+        let micAuth: String
+        switch AVAudioApplication.shared.recordPermission {
+        case .undetermined: micAuth = "undetermined"
+        case .denied: micAuth = "denied"
+        case .granted: micAuth = "granted"
+        @unknown default: micAuth = "unknown"
+        }
+        return [
+            "speech_auth": speechAuth,
+            "mic_auth": micAuth,
+            "recognizer_available": "\(recognizer?.isAvailable ?? false)",
+            "on_device": "\(recognizer?.supportsOnDeviceRecognition ?? false)",
+            "locale": recognizer?.locale.identifier ?? "nil",
+        ]
     }
 
     func start() throws {
@@ -36,8 +64,10 @@ final class AppleSpeechTranscriber {
         audioEngine.prepare()
         try audioEngine.start()
 
-        task = recognizer?.recognitionTask(with: request) { [weak self] result, _ in
-            guard let self, let result else { return }
+        task = recognizer?.recognitionTask(with: request) { [weak self] result, error in
+            guard let self else { return }
+            if let error { self.onError?(error) }
+            guard let result else { return }
             self.transcript = result.bestTranscription.formattedString
             self.onPartial?(self.transcript)
         }

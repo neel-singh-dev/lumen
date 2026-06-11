@@ -112,7 +112,7 @@ final class AssistantController {
         answerTask?.cancel()
         autoHideTask?.cancel()
         pointer.hide()
-        log.append("summon")
+        log.append("summon", transcriber.diagnostics())
 
         panel.show(state: .listening(partial: ""))
         transcriber.onPartial = { [weak self] text in
@@ -120,9 +120,15 @@ final class AssistantController {
                 self?.panel.show(state: .listening(partial: text))
             }
         }
+        transcriber.onError = { [weak self] error in
+            Task { @MainActor in
+                self?.log.append("stt.error", ["message": error.localizedDescription])
+            }
+        }
         do {
             try transcriber.start()
         } catch {
+            log.append("stt.start_failed", ["message": error.localizedDescription])
             panel.show(state: .error("Microphone unavailable: \(error.localizedDescription)"))
             return
         }
@@ -141,7 +147,15 @@ final class AssistantController {
     private func answer() async {
         let question = await transcriber.stop()
         guard !question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            panel.hide()
+            // Don't vanish silently — an empty transcript is the most common
+            // symptom of a permissions problem, so say so.
+            log.append("transcript.empty")
+            panel.show(state: .error("Didn't catch any speech. Check System Settings → Privacy → Microphone and Speech Recognition for Lumen."))
+            autoHideTask = Task {
+                try? await Task.sleep(nanoseconds: 6_000_000_000)
+                guard !Task.isCancelled else { return }
+                panel.hide()
+            }
             return
         }
         log.append("transcript", ["text": question])
