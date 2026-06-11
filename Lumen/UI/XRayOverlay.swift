@@ -27,10 +27,12 @@ final class XRayModel: ObservableObject {
     @Published var headline = ""
     @Published var destination = ""
     @Published var receipt: NSImage?
+    @Published var costLine = ""
 
     func reset(provider: String) {
         headline = provider
         receipt = nil
+        costLine = ""
         destination = ProviderSettings.kind == .anthropic
             ? "api.anthropic.com · TLS"
             : (ProviderSettings.baseURL.contains("localhost") || ProviderSettings.baseURL.contains("127.0.0.1")
@@ -159,6 +161,17 @@ struct XRayView: View {
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(model.stages.enumerated()), id: \.element.id) { index, stage in
                     StageRow(stage: stage, isLast: index == model.stages.count - 1)
+                }
+            }
+
+            if !model.costLine.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("EST. PAYLOAD")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                    Text(model.costLine)
+                        .font(.caption2.monospaced())
+                        .foregroundStyle(.secondary)
                 }
             }
 

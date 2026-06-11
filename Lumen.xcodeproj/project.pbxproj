@@ -25,6 +25,7 @@
 		ADCC7A9DD14801912930EAE1 /* Transcriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 997F5D73AAAE65A3B0335B1B /* Transcriber.swift */; };
 		B2D9EB5E7CAD1D76145E3F6E /* ReplayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9093A5311D1A2C7A36335073 /* ReplayStore.swift */; };
 		B85FA0CB2B8164AFFBB928BC /* HotkeyMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A13CDE23B9C1246F4A4D6F31 /* HotkeyMonitor.swift */; };
+		B97D11639CBC542CCD29426B /* CostEstimatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE02385B4E4A13F65E0A7393 /* CostEstimatorTests.swift */; };
 		B9DD406AF0A31BD3CAE427AF /* AssistantController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B52B4AC2333DFBA0C08DB196 /* AssistantController.swift */; };
 		C10E34BBD555BCB115A625DB /* Narrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B063CB6CC8FD199740F5D66 /* Narrator.swift */; };
 		C46F467234D293E7DFC24312 /* ScreenAnchor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D6004E492E9A5582EFECE97 /* ScreenAnchor.swift */; };
@@ -66,6 +67,7 @@
 		B52B4AC2333DFBA0C08DB196 /* AssistantController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantController.swift; sourceTree = "<group>"; };
 		BAE60B0500F5D871839332C8 /* NotchOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchOverlay.swift; sourceTree = "<group>"; };
 		D3FCBEFA855437E1DC340AA9 /* ProviderSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderSettings.swift; sourceTree = "<group>"; };
+		EE02385B4E4A13F65E0A7393 /* CostEstimatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CostEstimatorTests.swift; sourceTree = "<group>"; };
 		FB69623C5BC7D5FECD47DBA0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -94,6 +96,7 @@
 		70C563EFC11B056FBA07C812 /* LumenTests */ = {
 			isa = PBXGroup;
 			children = (
+				EE02385B4E4A13F65E0A7393 /* CostEstimatorTests.swift */,
 				898C8E0D85F797F4EA2BD148 /* ReplayStoreTests.swift */,
 				18F2FA213869BED85072B8E5 /* SmokeTests.swift */,
 			);
@@ -264,6 +267,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5F834541AFBFCF5B88A7B938 /* CostEstimator.swift in Sources */,
+				B97D11639CBC542CCD29426B /* CostEstimatorTests.swift in Sources */,
 				C6F9304AEE8CFDCE0C3F8A85 /* PointParser.swift in Sources */,
 				AB1E8E6A2471EE4B50049C67 /* ProviderRouting.swift in Sources */,
 				C70F3C2BF96E812EC085CEB5 /* ReplayStore.swift in Sources */,

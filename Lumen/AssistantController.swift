@@ -590,6 +590,16 @@ final class AssistantController {
             xray.model.update("perceive", status: .failed, detail: "no AX tree")
         }
         xray.model.update("reason", status: .active)
+        let historyChars = history.suffix(6).reduce(0) { $0 + $1.question.count + $1.answer.count }
+        let estimate = CostEstimator.estimate(
+            imagePixelWidth: capture?.pixelWidth,
+            imagePixelHeight: capture?.pixelHeight,
+            elementChars: snapshot?.promptText?.count ?? 0,
+            historyChars: historyChars,
+            questionChars: question.count
+        )
+        xray.model.costLine = estimate.summary
+        log.append("cost", ["total_tokens": "\(estimate.total)"])
 
         // The receipt discloses the FULL payload: pixels and element list.
         // It renders in the notch transcript card — unless X-Ray is open
