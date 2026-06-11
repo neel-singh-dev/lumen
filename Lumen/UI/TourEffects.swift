@@ -86,14 +86,26 @@ struct TourFXView: View {
 // MARK: - Edge glow (the "AI is present" ambience)
 
 private struct EdgeGlowView: View {
-    @State private var rotate = false
-    @State private var breathe = false
-
     private var reduceMotion: Bool {
         NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
     }
 
     var body: some View {
+        if reduceMotion {
+            glow(angle: 0, breathe: 0.8)
+        } else {
+            // Time-driven, transaction-free — repeatForever-in-onAppear
+            // leaks into insertion transitions and breaks rendering.
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
+                let t = timeline.date.timeIntervalSinceReferenceDate
+                let angle = (t * 45).truncatingRemainder(dividingBy: 360)
+                let breathe = 0.45 + 0.4 * abs(sin(t * .pi / 2.2))
+                glow(angle: angle, breathe: breathe)
+            }
+        }
+    }
+
+    private func glow(angle: Double, breathe: Double) -> some View {
         GeometryReader { geo in
             let gradient = AngularGradient(
                 colors: [.teal, .blue, .purple, .mint, .teal],
@@ -102,7 +114,7 @@ private struct EdgeGlowView: View {
             ZStack {
                 // Soft outer bloom
                 gradient
-                    .rotationEffect(.degrees(rotate ? 360 : 0))
+                    .rotationEffect(.degrees(angle))
                     .frame(width: geo.size.width * 1.6, height: geo.size.height * 1.6)
                     .position(x: geo.size.width / 2, y: geo.size.height / 2)
                     .mask(
@@ -111,10 +123,10 @@ private struct EdgeGlowView: View {
                             .padding(8)
                     )
                     .blur(radius: 18)
-                    .opacity(breathe ? 0.85 : 0.45)
+                    .opacity(breathe)
                 // Crisp inner line
                 gradient
-                    .rotationEffect(.degrees(rotate ? 360 : 0))
+                    .rotationEffect(.degrees(angle))
                     .frame(width: geo.size.width * 1.6, height: geo.size.height * 1.6)
                     .position(x: geo.size.width / 2, y: geo.size.height / 2)
                     .mask(
@@ -123,19 +135,7 @@ private struct EdgeGlowView: View {
                             .padding(5)
                     )
                     .blur(radius: 1)
-                    .opacity(breathe ? 1 : 0.6)
-            }
-        }
-        .onAppear {
-            guard !reduceMotion else {
-                breathe = true
-                return
-            }
-            withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
-                rotate = true
-            }
-            withAnimation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true)) {
-                breathe = true
+                    .opacity(min(1, breathe + 0.2))
             }
         }
     }
@@ -144,33 +144,30 @@ private struct EdgeGlowView: View {
 // MARK: - Sonar ripples from the notch
 
 private struct NotchRipplesView: View {
-    @State private var animate = false
-
     var body: some View {
-        GeometryReader { geo in
-            ZStack {
-                ForEach(0..<3, id: \.self) { index in
-                    Circle()
-                        .stroke(
-                            LinearGradient(colors: [.teal, .mint], startPoint: .top, endPoint: .bottom),
-                            lineWidth: 2
-                        )
-                        .frame(width: 70, height: 70)
-                        .scaleEffect(animate ? 4.5 : 0.4)
-                        .opacity(animate ? 0 : 0.8)
-                        .animation(
-                            .easeOut(duration: 2.4)
-                                .repeatForever(autoreverses: false)
-                                .delay(Double(index) * 0.8),
-                            value: animate
-                        )
+        if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            EmptyView()
+        } else {
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
+                let t = timeline.date.timeIntervalSinceReferenceDate
+                GeometryReader { geo in
+                    ZStack {
+                        ForEach(0..<3, id: \.self) { index in
+                            let progress = ((t + Double(index) * 0.8)
+                                .truncatingRemainder(dividingBy: 2.4)) / 2.4
+                            Circle()
+                                .stroke(
+                                    LinearGradient(colors: [.teal, .mint], startPoint: .top, endPoint: .bottom),
+                                    lineWidth: 2
+                                )
+                                .frame(width: 70, height: 70)
+                                .scaleEffect(0.4 + 4.1 * progress)
+                                .opacity(0.8 * (1 - progress))
+                        }
+                    }
+                    .position(x: geo.size.width / 2, y: 16)
                 }
             }
-            .position(x: geo.size.width / 2, y: 16)
-        }
-        .onAppear {
-            guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
-            animate = true
         }
     }
 }
@@ -178,9 +175,18 @@ private struct NotchRipplesView: View {
 // MARK: - Keycaps (the hotkey lesson)
 
 private struct KeycapsView: View {
-    @State private var pressed = false
-
     var body: some View {
+        if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            caps(scale: 1)
+        } else {
+            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
+                let t = timeline.date.timeIntervalSinceReferenceDate
+                caps(scale: 1 - 0.05 * abs(sin(t * .pi / 0.9)))
+            }
+        }
+    }
+
+    private func caps(scale: Double) -> some View {
         GeometryReader { geo in
             HStack(spacing: 18) {
                 keycap(symbol: "⌃", name: "control")
@@ -189,14 +195,8 @@ private struct KeycapsView: View {
                     .foregroundStyle(.white.opacity(0.5))
                 keycap(symbol: "⌥", name: "option")
             }
-            .scaleEffect(pressed ? 0.94 : 1)
+            .scaleEffect(scale)
             .position(x: geo.size.width / 2, y: geo.size.height * 0.62)
-        }
-        .onAppear {
-            guard !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
-            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
-                pressed = true
-            }
         }
     }
 

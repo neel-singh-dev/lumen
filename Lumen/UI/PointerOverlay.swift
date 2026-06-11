@@ -238,8 +238,6 @@ struct AnnotationView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .animation(.easeOut(duration: 0.25), value: model.pointerVisible)
-        .animation(.easeOut(duration: 0.3), value: model.currentBox)
     }
 
     private var pointer: some View {
@@ -282,7 +280,6 @@ private struct SpotlightDim: View {
 private struct HighlightBox: View {
     let box: PointerModel.Box
     let isCurrent: Bool
-    @State private var dashPhase: CGFloat = 0
 
     private var accent: Color {
         box.style == .region ? .yellow : .teal
@@ -315,25 +312,35 @@ private struct HighlightBox: View {
     @ViewBuilder
     private func shape(for rect: CGRect) -> some View {
         if box.style == .region {
-            // Dashed marching-ants border — the section treatment.
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(
-                    accent.opacity(isCurrent ? 0.95 : 0.25),
-                    style: StrokeStyle(lineWidth: isCurrent ? 2.5 : 1.5, dash: [9, 6], dashPhase: dashPhase)
-                )
-                .shadow(color: accent.opacity(isCurrent ? 0.45 : 0), radius: 7)
-                .onAppear {
-                    guard isCurrent,
-                          !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
-                    withAnimation(.linear(duration: 0.5).repeatForever(autoreverses: false)) {
-                        dashPhase = -15
-                    }
+            // Dashed marching-ants border, driven by TimelineView — pure
+            // time-based phase, no repeatForever transactions to leak into
+            // the view's insertion transition (the bug that made regions
+            // flicker or never appear).
+            if isCurrent, !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+                TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
+                    let phase = CGFloat(
+                        timeline.date.timeIntervalSinceReferenceDate
+                            .truncatingRemainder(dividingBy: 0.5)
+                    ) * -30
+                    regionStroke(dashPhase: phase)
                 }
+            } else {
+                regionStroke(dashPhase: 0)
+            }
         } else {
             RoundedRectangle(cornerRadius: 8)
                 .strokeBorder(accent.opacity(isCurrent ? 1 : 0.25), lineWidth: isCurrent ? 2.5 : 1.5)
                 .shadow(color: accent.opacity(isCurrent ? 0.55 : 0), radius: 8)
         }
+    }
+
+    private func regionStroke(dashPhase: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: 10)
+            .stroke(
+                accent.opacity(isCurrent ? 0.95 : 0.25),
+                style: StrokeStyle(lineWidth: isCurrent ? 2.5 : 1.5, dash: [9, 6], dashPhase: dashPhase)
+            )
+            .shadow(color: accent.opacity(isCurrent ? 0.45 : 0), radius: 7)
     }
 }
 
