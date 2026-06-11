@@ -11,6 +11,7 @@ enum AssistantState {
 @MainActor
 final class OverlayModel: ObservableObject {
     @Published var state: AssistantState = .listening(partial: "")
+    var onDismiss: (() -> Void)?
 }
 
 /// Non-activating floating overlay — floats above everything (including
@@ -23,6 +24,7 @@ final class OverlayPanelController {
     func show(state: AssistantState) {
         model.state = state
         if panel == nil {
+            model.onDismiss = { [weak self] in self?.hide() }
             panel = makePanel()
         }
         panel?.orderFrontRegardless()
@@ -69,6 +71,10 @@ struct OverlayView: View {
         .frame(width: 480)
         .frame(minHeight: 120)
         .background(panelBackground)
+        .contentShape(RoundedRectangle(cornerRadius: 24))
+        // Click anywhere on the panel to dismiss — the panel is
+        // non-activating, so the click never steals focus.
+        .onTapGesture { model.onDismiss?() }
         .animation(.spring(duration: 0.35), value: stateKey)
     }
 

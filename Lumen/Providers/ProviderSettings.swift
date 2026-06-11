@@ -25,10 +25,10 @@ enum ProviderSettings {
         UserDefaults.standard.string(forKey: baseURLKey) ?? "http://localhost:11434"
     }
 
-    /// Qwen2.5-VL by default — strong at coordinate grounding, which is
+    /// Qwen3-VL by default — strong at coordinate grounding, which is
     /// exactly what the [POINT] protocol needs from a local model.
     static var model: String {
-        UserDefaults.standard.string(forKey: modelKey) ?? "qwen2.5vl"
+        UserDefaults.standard.string(forKey: modelKey) ?? "qwen3-vl"
     }
 
     static func setLocal(baseURL: String, model: String) {

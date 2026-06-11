@@ -75,7 +75,7 @@ final class AssistantController {
         alert.messageText = "Local / OpenAI-compatible Provider"
         alert.informativeText = """
         Works with Ollama (default), LM Studio, or any OpenAI-compatible \
-        endpoint. For Ollama, pull a vision model first:  ollama pull qwen2.5vl
+        endpoint. For Ollama, pull a vision model first:  ollama pull qwen3-vl
         """
         let container = NSView(frame: NSRect(x: 0, y: 0, width: 360, height: 86))
         let urlLabel = NSTextField(labelWithString: "Base URL")
@@ -87,7 +87,7 @@ final class AssistantController {
         modelLabel.frame = NSRect(x: 0, y: 24, width: 360, height: 16)
         let modelField = NSTextField(string: ProviderSettings.model)
         modelField.frame = NSRect(x: 0, y: 0, width: 360, height: 24)
-        modelField.placeholderString = "qwen2.5vl"
+        modelField.placeholderString = "qwen3-vl"
         container.addSubview(urlLabel)
         container.addSubview(urlField)
         container.addSubview(modelLabel)
@@ -205,6 +205,11 @@ final class AssistantController {
         } catch {
             log.append("error", ["message": error.localizedDescription])
             panel.show(state: .error(error.localizedDescription))
+            autoHideTask = Task {
+                try? await Task.sleep(nanoseconds: 8_000_000_000)
+                guard !Task.isCancelled else { return }
+                panel.hide()
+            }
         }
     }
 }
