@@ -84,16 +84,19 @@ final class XRayOverlayController {
     }
 
     /// The card's content changes mid-turn (timings, the receipt image) —
-    /// keep the panel sized to fit, pinned to the screen's top-right.
+    /// keep the panel sized to fit, ALWAYS pinned to the screen's top-right.
+    /// (Positioning must run even when the size didn't change: a freshly
+    /// created panel is born at AppKit's origin — bottom-left.)
     private func resizeToFit() {
         guard let panel, let hosting, let screen = NSScreen.lumen else { return }
         let size = hosting.fittingSize
-        guard abs(size.height - panel.frame.height) > 0.5 else { return }
+        if abs(size.height - panel.frame.height) > 0.5 {
+            panel.setContentSize(size)
+        }
         let frame = screen.visibleFrame
-        panel.setContentSize(size)
         panel.setFrameOrigin(NSPoint(
-            x: frame.maxX - size.width - 16,
-            y: frame.maxY - size.height - 16
+            x: frame.maxX - panel.frame.width - 16,
+            y: frame.maxY - panel.frame.height - 16
         ))
     }
 

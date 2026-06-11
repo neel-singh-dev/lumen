@@ -125,7 +125,8 @@ final class NotchOverlayController {
         model.receiptNote = note
     }
 
-    /// Collapses transcript and receipt back to the slim handle.
+    /// Collapses everything — transcript, receipt, settings — back to the
+    /// invisible handle.
     func clearOverlay() {
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             model.transcriptVisible = false
@@ -133,6 +134,16 @@ final class NotchOverlayController {
             model.isError = false
             model.receipt = nil
             model.phase = .idle
+            model.showSettings = false
+        }
+        resize()
+    }
+
+    /// Folds the settings panel without touching anything else.
+    func closeSettings() {
+        guard model.showSettings else { return }
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            model.showSettings = false
         }
         resize()
     }

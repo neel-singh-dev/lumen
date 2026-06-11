@@ -139,6 +139,7 @@ final class AssistantController {
         autoHideTask?.cancel()
         log.append("agent.preview")
 
+        notch.closeSettings()
         notch.setReceipt(nil, note: "")
         let snapshotTask = Task.detached { [axReader] in
             axReader.snapshotFrontmostApp()
@@ -191,6 +192,7 @@ final class AssistantController {
         pointer.hide()
         autoHideTask?.cancel()
         tourTimeout?.cancel()
+        notch.closeSettings()
         notch.setReceipt(nil, note: "")
 
         // The show: edge glow says "AI is present", ripples introduce the
