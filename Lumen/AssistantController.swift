@@ -692,7 +692,10 @@ final class AssistantController {
             let scaleY = screen.frame.height / CGFloat(capture.pixelHeight)
             let target = CGPoint(x: CGFloat(x) * scaleX, y: CGFloat(y) * scaleY)
             deliver(.init(kind: .point, rect: CGRect(origin: target, size: .zero), label: label))
-            log.append("annotate.pixel", ["x": "\(x)", "y": "\(y)", "label": label])
+            log.append("annotate.pixel", [
+                "x": "\(x)", "y": "\(y)", "label": label,
+                "rx": "\(Int(target.x))", "ry": "\(Int(target.y))", "rw": "0", "rh": "0",
+            ])
         case .elementPoint(let id):
             guard let element = snapshot?.element(withID: id) else {
                 log.append("annotate.miss", ["id": "E\(id)"])
@@ -701,7 +704,10 @@ final class AssistantController {
             let target = CGPoint(x: element.frame.midX, y: element.frame.midY)
             deliver(.init(kind: .point, rect: CGRect(origin: target, size: .zero),
                           label: element.label.isEmpty ? element.roleName : element.label))
-            log.append("annotate.element_point", ["id": "E\(id)", "label": element.label])
+            log.append("annotate.element_point", [
+                "id": "E\(id)", "label": element.label,
+                "rx": "\(Int(target.x))", "ry": "\(Int(target.y))", "rw": "0", "rh": "0",
+            ])
         case .elementBox(let id):
             guard let element = snapshot?.element(withID: id) else {
                 log.append("annotate.miss", ["id": "E\(id)"])
@@ -709,7 +715,11 @@ final class AssistantController {
             }
             deliver(.init(kind: .box, rect: element.frame,
                           label: element.label.isEmpty ? element.roleName : element.label))
-            log.append("annotate.element_box", ["id": "E\(id)", "label": element.label])
+            log.append("annotate.element_box", [
+                "id": "E\(id)", "label": element.label,
+                "rx": "\(Int(element.frame.minX))", "ry": "\(Int(element.frame.minY))",
+                "rw": "\(Int(element.frame.width))", "rh": "\(Int(element.frame.height))",
+            ])
         case .region(let x, let y, let w, let h, let label):
             // Section highlight — pixel space, scaled to screen points,
             // then clamped so a hallucinated rect can never vanish
@@ -733,7 +743,11 @@ final class AssistantController {
             if rect.width < 32 { rect = rect.insetBy(dx: (rect.width - 32) / 2, dy: 0) }
             if rect.height < 26 { rect = rect.insetBy(dx: 0, dy: (rect.height - 26) / 2) }
             deliver(.init(kind: .region, rect: rect, label: label))
-            log.append("annotate.region", ["label": label, "w": "\(w)", "h": "\(h)"])
+            log.append("annotate.region", [
+                "label": label, "w": "\(w)", "h": "\(h)",
+                "rx": "\(Int(rect.minX))", "ry": "\(Int(rect.minY))",
+                "rw": "\(Int(rect.width))", "rh": "\(Int(rect.height))",
+            ])
         case .openURL(let raw):
             // Real agent action: open a page. Border = "I'm acting now."
             let normalized = raw.hasPrefix("http") ? raw : "https://\(raw)"
