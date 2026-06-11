@@ -256,7 +256,7 @@ final class AssistantController {
                   let screen = NSScreen.main else { return }
             let scaleX = screen.frame.width / CGFloat(capture.pixelWidth)
             let scaleY = screen.frame.height / CGFloat(capture.pixelHeight)
-            pointer.point(
+            pointer.enqueuePoint(
                 atScreenPoint: CGPoint(x: CGFloat(x) * scaleX, y: CGFloat(y) * scaleY),
                 label: label
             )
@@ -266,7 +266,7 @@ final class AssistantController {
                 log.append("annotate.miss", ["id": "E\(id)"])
                 return
             }
-            pointer.point(
+            pointer.enqueuePoint(
                 atScreenPoint: CGPoint(x: element.frame.midX, y: element.frame.midY),
                 label: element.label.isEmpty ? element.roleName : element.label
             )
@@ -276,7 +276,7 @@ final class AssistantController {
                 log.append("annotate.miss", ["id": "E\(id)"])
                 return
             }
-            pointer.highlight(
+            pointer.enqueueHighlight(
                 rect: element.frame,
                 label: element.label.isEmpty ? element.roleName : element.label
             )
