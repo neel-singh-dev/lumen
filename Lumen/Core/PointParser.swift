@@ -24,16 +24,39 @@ enum PointParser {
     private static let thinkPattern = #/<think>[\s\S]*?<\/think>/#
 
     static func process(_ raw: String) -> (display: String, annotations: [Annotation]) {
-        // Some local thinking models (Qwen3 family) emit inline
-        // <think>…</think> blocks even when thinking is switched off.
+        let buffer = cleaned(raw)
+        let found = collectTags(buffer)
+
+        var display = buffer
+            .replacing(pixelPattern, with: "")
+            .replacing(elementPointPattern, with: "")
+            .replacing(elementBoxPattern, with: "")
+
+        // Hold back a partially-streamed tag so "[POIN" never flashes.
+        if let bracket = display.lastIndex(of: "["),
+           !display[bracket...].contains("]") {
+            display = String(display[..<bracket])
+        }
+
+        return (
+            display.trimmingCharacters(in: .whitespacesAndNewlines),
+            found.map(\.1)
+        )
+    }
+
+    /// Strips hidden-reasoning blocks (complete and partially-streamed).
+    static func cleaned(_ raw: String) -> String {
         var buffer = raw.replacing(thinkPattern, with: "")
         if let open = buffer.range(of: "<think>"),
            !buffer[open.upperBound...].contains("</think>") {
             buffer = String(buffer[..<open.lowerBound])
         }
+        return buffer
+    }
 
-        // Collect all annotations with their positions, then sort into
-        // document order so streaming fire-once indexes stay stable.
+    /// All complete annotation tags with their ranges, in document order —
+    /// stable across re-parses of a growing stream buffer.
+    private static func collectTags(_ buffer: String) -> [(Range<String.Index>, Annotation)] {
         var found: [(Range<String.Index>, Annotation)] = []
         for match in buffer.matches(of: pixelPattern) {
             if let x = Int(match.1), let y = Int(match.2) {
@@ -51,21 +74,88 @@ enum PointParser {
             }
         }
         found.sort { $0.0.lowerBound < $1.0.lowerBound }
+        return found
+    }
 
-        var display = buffer
-            .replacing(pixelPattern, with: "")
-            .replacing(elementPointPattern, with: "")
-            .replacing(elementBoxPattern, with: "")
+    // MARK: - Narration segments
 
-        // Hold back a partially-streamed tag so "[POIN" never flashes.
-        if let bracket = display.lastIndex(of: "["),
-           !display[bracket...].contains("]") {
-            display = String(display[..<bracket])
+    /// One narration beat: a sentence and the annotations attached to it.
+    struct Segment: Equatable {
+        let text: String
+        let annotations: [Annotation]
+    }
+
+    /// Splits the stream into narration segments — sentence text plus the
+    /// tags that immediately follow it. When `isFinal` is false, the
+    /// trailing in-progress sentence is withheld (more text or tags may
+    /// still arrive for it); earlier segments parse identically as the
+    /// buffer grows, so callers can deliver `segments[deliveredCount...]`.
+    static func segments(_ raw: String, isFinal: Bool) -> [Segment] {
+        let buffer = cleaned(raw)
+        let tags = collectTags(buffer)
+
+        enum Part {
+            case text(Substring)
+            case tag(Annotation)
+        }
+        var parts: [Part] = []
+        var cursor = buffer.startIndex
+        for (range, annotation) in tags {
+            if cursor < range.lowerBound {
+                parts.append(.text(buffer[cursor..<range.lowerBound]))
+            }
+            parts.append(.tag(annotation))
+            cursor = range.upperBound
+        }
+        if cursor < buffer.endIndex {
+            parts.append(.text(buffer[cursor...]))
         }
 
-        return (
-            display.trimmingCharacters(in: .whitespacesAndNewlines),
-            found.map(\.1)
-        )
+        var segments: [Segment] = []
+        var text = ""
+        var annotations: [Annotation] = []
+        var sentenceDone = false
+
+        func close() {
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty || !annotations.isEmpty {
+                segments.append(Segment(text: trimmed, annotations: annotations))
+            }
+            text = ""
+            annotations = []
+            sentenceDone = false
+        }
+
+        for part in parts {
+            switch part {
+            case .tag(let annotation):
+                annotations.append(annotation)
+            case .text(let chunk):
+                var rest = chunk[...]
+                while !rest.isEmpty {
+                    if sentenceDone {
+                        // New visible text after a finished sentence: the
+                        // previous segment can no longer gain tags — close it.
+                        if let firstNonWS = rest.firstIndex(where: { !$0.isWhitespace }) {
+                            rest = rest[firstNonWS...]
+                            close()
+                        } else {
+                            rest = rest[rest.endIndex...]
+                        }
+                        continue
+                    }
+                    if let terminator = rest.firstIndex(where: { ".!?".contains($0) }) {
+                        text += rest[...terminator]
+                        rest = rest[rest.index(after: terminator)...]
+                        sentenceDone = true
+                    } else {
+                        text += rest
+                        rest = rest[rest.endIndex...]
+                    }
+                }
+            }
+        }
+        if isFinal { close() }
+        return segments
     }
 }

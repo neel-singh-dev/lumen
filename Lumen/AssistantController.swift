@@ -13,7 +13,13 @@ final class AssistantController {
     private let capturer = ScreenCapturer()
     private let axReader = AXReader()
     private let transcriber = AppleSpeechTranscriber()
+    private let narrator = Narrator()
     private let log = EventLog()
+
+    /// Perception context for the in-flight turn, so speech-synced
+    /// annotation delivery can resolve element ids when its beat arrives.
+    private var currentCapture: ScreenCapture?
+    private var currentSnapshot: AXReader.Snapshot?
 
     /// Resolved per request so a provider switch in the menu takes effect
     /// on the very next summon — including mid-demo hot-swaps.
@@ -37,6 +43,12 @@ final class AssistantController {
 
     func start() {
         AppleSpeechTranscriber.requestPermissions()
+        narrator.onSegmentStart = { [weak self] segment in
+            guard let self else { return }
+            for annotation in segment.annotations {
+                self.apply(annotation, capture: self.currentCapture, snapshot: self.currentSnapshot)
+            }
+        }
         hotkey.onPushToTalkChanged = { [weak self] isDown in
             if isDown {
                 self?.beginListening()
@@ -51,6 +63,7 @@ final class AssistantController {
     func hideOverlays() {
         answerTask?.cancel()
         autoHideTask?.cancel()
+        narrator.stop()
         panel.hide()
         pointer.hide()
     }
@@ -113,6 +126,7 @@ final class AssistantController {
     private func beginListening() {
         answerTask?.cancel()
         autoHideTask?.cancel()
+        narrator.stop()
         pointer.hide()
         log.append("summon", transcriber.diagnostics())
 
@@ -183,8 +197,13 @@ final class AssistantController {
             : "Sent to the model — exactly this frame")
         panel.show(state: .thinking(receipt: capture?.image))
 
+        currentCapture = capture
+        currentSnapshot = snapshot
+
         var buffer = ""
         var fired = 0
+        var deliveredSegments = 0
+        let speechOn = Narrator.isEnabled
         let started = Date()
 
         do {
@@ -198,11 +217,34 @@ final class AssistantController {
                 let (display, annotations) = PointParser.process(buffer)
                 panel.show(state: .answering(text: display, receipt: capture?.image, done: false))
 
-                if annotations.count > fired {
+                if speechOn {
+                    // Speech is the pacer: each completed sentence is voiced,
+                    // and its annotations fire when its audio starts.
+                    let segments = PointParser.segments(buffer, isFinal: false)
+                    if segments.count > deliveredSegments {
+                        for segment in segments[deliveredSegments...] {
+                            narrator.enqueue(segment)
+                            fired += segment.annotations.count
+                        }
+                        deliveredSegments = segments.count
+                    }
+                } else if annotations.count > fired {
                     for annotation in annotations[fired...] {
                         apply(annotation, capture: capture, snapshot: snapshot)
                     }
                     fired = annotations.count
+                }
+            }
+
+            if speechOn {
+                // Flush the trailing sentence the stream ended on.
+                let segments = PointParser.segments(buffer, isFinal: true)
+                if segments.count > deliveredSegments {
+                    for segment in segments[deliveredSegments...] {
+                        narrator.enqueue(segment)
+                        fired += segment.annotations.count
+                    }
+                    deliveredSegments = segments.count
                 }
             }
 
