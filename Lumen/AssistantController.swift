@@ -705,7 +705,7 @@ final class AssistantController {
             deliver(.init(kind: .point, rect: CGRect(origin: target, size: .zero),
                           label: element.label.isEmpty ? element.roleName : element.label))
             log.append("annotate.element_point", [
-                "id": "E\(id)", "label": element.label,
+                "id": "E\(id)", "label": element.label.isEmpty ? element.roleName : element.label,
                 "rx": "\(Int(target.x))", "ry": "\(Int(target.y))", "rw": "0", "rh": "0",
             ])
         case .elementBox(let id):
@@ -716,7 +716,7 @@ final class AssistantController {
             deliver(.init(kind: .box, rect: element.frame,
                           label: element.label.isEmpty ? element.roleName : element.label))
             log.append("annotate.element_box", [
-                "id": "E\(id)", "label": element.label,
+                "id": "E\(id)", "label": element.label.isEmpty ? element.roleName : element.label,
                 "rx": "\(Int(element.frame.minX))", "ry": "\(Int(element.frame.minY))",
                 "rw": "\(Int(element.frame.width))", "rh": "\(Int(element.frame.height))",
             ])
@@ -744,7 +744,7 @@ final class AssistantController {
             if rect.height < 26 { rect = rect.insetBy(dx: 0, dy: (rect.height - 26) / 2) }
             deliver(.init(kind: .region, rect: rect, label: label))
             log.append("annotate.region", [
-                "label": label, "w": "\(w)", "h": "\(h)",
+                "label": label,
                 "rx": "\(Int(rect.minX))", "ry": "\(Int(rect.minY))",
                 "rw": "\(Int(rect.width))", "rh": "\(Int(rect.height))",
             ])
