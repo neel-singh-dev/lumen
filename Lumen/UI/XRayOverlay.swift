@@ -147,6 +147,7 @@ struct XRayView: View {
                 }
                 .buttonStyle(.plain)
                 .help("Close X-Ray mode")
+                .handCursor()
             }
             Text(model.headline)
                 .font(.caption2.monospaced())

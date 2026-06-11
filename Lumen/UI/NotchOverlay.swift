@@ -1,6 +1,20 @@
 import AppKit
 import SwiftUI
 
+extension View {
+    /// macOS SwiftUI doesn't show the pointing hand on buttons by itself —
+    /// every clickable element opts in.
+    func handCursor() -> some View {
+        onHover { inside in
+            if inside {
+                NSCursor.pointingHand.set()
+            } else {
+                NSCursor.arrow.set()
+            }
+        }
+    }
+}
+
 /// Lumen's home — the notch. One continuous black shape extends the
 /// physical notch: a slim handle at rest, a status capsule while working
 /// (waveform + your words live → loader → speaker), and on HOVER it
@@ -502,6 +516,7 @@ private struct NotchSettingsView: View {
                     .buttonStyle(.plain)
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.35))
+                    .handCursor()
             }
         }
     }
@@ -546,6 +561,7 @@ private struct NotchSettingsView: View {
             )
         }
         .buttonStyle(.plain)
+        .handCursor()
     }
 
     @ViewBuilder
@@ -600,6 +616,14 @@ private struct NotchSettingsView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
+        // The whole row is the control, not just the tiny switch.
+        .contentShape(Rectangle())
+        .onTapGesture {
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                binding.wrappedValue.toggle()
+            }
+        }
+        .handCursor()
     }
 
     private func exploreButton(_ icon: String, _ title: String, action: @escaping () -> Void) -> some View {
@@ -621,5 +645,6 @@ private struct NotchSettingsView: View {
             )
         }
         .buttonStyle(.plain)
+        .handCursor()
     }
 }
