@@ -90,7 +90,8 @@ open Lumen.xcodeproj    # ⌘R
 ```
 
 Builds sign with a personal Apple Development identity (`project.yml` sets the
-team), so TCC permission grants survive rebuilds. There's no notarization on a
+team — building on your own Mac, swap `DEVELOPMENT_TEAM` for yours), so TCC
+permission grants survive rebuilds. There's no notarization on a
 free Apple ID — if you run a **downloaded** zip instead of building from
 source, first launch is right-click → **Open** to clear Gatekeeper once.
 
