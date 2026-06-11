@@ -24,9 +24,17 @@ final class XRayModel: ObservableObject {
 
     @Published var stages: [Stage] = []
     @Published var headline = ""
+    @Published var destination = ""
+    @Published var receipt: NSImage?
 
     func reset(provider: String) {
         headline = provider
+        receipt = nil
+        destination = ProviderSettings.kind == .anthropic
+            ? "api.anthropic.com · TLS"
+            : (ProviderSettings.baseURL.contains("localhost") || ProviderSettings.baseURL.contains("127.0.0.1")
+                ? "localhost — fully local, nothing leaves this Mac"
+                : ProviderSettings.baseURL)
         stages = [
             Stage(id: "listen", title: "Listen", subsystem: "Apple Speech · on-device"),
             Stage(id: "capture", title: "Capture", subsystem: "ScreenCaptureKit"),
@@ -119,6 +127,33 @@ struct XRayView: View {
                     StageRow(stage: stage, isLast: index == model.stages.count - 1)
                 }
             }
+
+            if let receipt = model.receipt {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("WHAT LEFT THIS MAC")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                    Image(nsImage: receipt)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: .infinity)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .strokeBorder(.teal.opacity(0.4), lineWidth: 1)
+                        )
+                }
+            }
+
+            // The guarantees, stated where the evidence is.
+            VStack(alignment: .leading, spacing: 5) {
+                Text("PRIVACY")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+                PrivacyRow(icon: "mic", text: "Voice transcribed on-device — audio never leaves this Mac")
+                PrivacyRow(icon: "camera.viewfinder", text: "Captures only while ⌃⌥ is held — nothing in between")
+                PrivacyRow(icon: "network", text: model.destination)
+            }
         }
         .padding(16)
         .frame(width: 280, alignment: .topLeading)
@@ -134,6 +169,24 @@ struct XRayView: View {
         } else {
             RoundedRectangle(cornerRadius: 18)
                 .fill(.ultraThinMaterial)
+        }
+    }
+}
+
+private struct PrivacyRow: View {
+    let icon: String
+    let text: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 7) {
+            Image(systemName: icon)
+                .font(.caption2)
+                .foregroundStyle(.teal)
+                .frame(width: 14)
+            Text(text)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

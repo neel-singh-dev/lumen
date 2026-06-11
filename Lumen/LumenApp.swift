@@ -29,6 +29,9 @@ struct LumenApp: App {
                 appDelegate.assistant.promptForLocalProvider()
             }
             Divider()
+            Button("Replay Welcome Tour") {
+                appDelegate.assistant.runWelcomeTour()
+            }
             Button("Hide Overlays") {
                 appDelegate.assistant.hideOverlays()
             }

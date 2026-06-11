@@ -15,20 +15,39 @@ final class OverlayModel: ObservableObject {
     var onDismiss: (() -> Void)?
 }
 
-/// Non-activating floating overlay — floats above everything (including
-/// full-screen apps) and never steals focus from the app the user is in.
+/// The conversation pill — a compact, non-activating glass capsule that
+/// appears right beside the mouse pointer at summon (everything happens
+/// where the user's eyes already are), shows the live transcript while
+/// they speak, then morphs into the streaming answer. It grows downward
+/// from its anchor and never steals focus.
 @MainActor
 final class OverlayPanelController {
     private var panel: NSPanel?
+    private var hosting: NSHostingView<OverlayView>?
     private let model = OverlayModel()
 
     func show(state: AssistantState) {
         model.state = state
         if panel == nil {
             model.onDismiss = { [weak self] in self?.hide() }
-            panel = makePanel()
+            build()
         }
-        panel?.orderFrontRegardless()
+        guard let panel, let hosting else { return }
+
+        let wasVisible = panel.isVisible
+        let size = hosting.fittingSize
+
+        if wasVisible {
+            // Keep the top edge pinned; grow downward as content streams in.
+            let top = panel.frame.maxY
+            let x = panel.frame.origin.x
+            panel.setContentSize(size)
+            panel.setFrameOrigin(NSPoint(x: x, y: top - size.height))
+        } else {
+            panel.setContentSize(size)
+            position(panel, near: NSEvent.mouseLocation, size: size)
+        }
+        panel.orderFrontRegardless()
     }
 
     func hide() {
@@ -40,9 +59,25 @@ final class OverlayPanelController {
         model.receiptNote = note
     }
 
-    private func makePanel() -> NSPanel {
+    private func position(_ panel: NSPanel, near mouse: NSPoint, size: NSSize) {
+        guard let screen = NSScreen.main?.visibleFrame else { return }
+        // Beside and below the cursor; flip sides at screen edges.
+        var origin = NSPoint(x: mouse.x + 18, y: mouse.y - size.height - 16)
+        if origin.x + size.width > screen.maxX - 8 {
+            origin.x = mouse.x - size.width - 18
+        }
+        origin.x = max(screen.minX + 8, min(origin.x, screen.maxX - size.width - 8))
+        if origin.y < screen.minY + 8 {
+            origin.y = mouse.y + 20
+        }
+        origin.y = max(screen.minY + 8, min(origin.y, screen.maxY - size.height - 8))
+        panel.setFrameOrigin(origin)
+    }
+
+    private func build() {
+        let hosting = NSHostingView(rootView: OverlayView(model: model))
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 480, height: 320),
+            contentRect: NSRect(origin: .zero, size: hosting.fittingSize),
             styleMask: [.nonactivatingPanel, .borderless],
             backing: .buffered,
             defer: false
@@ -55,13 +90,9 @@ final class OverlayPanelController {
         panel.backgroundColor = .clear
         panel.hasShadow = true
         panel.isMovableByWindowBackground = true
-        panel.contentView = NSHostingView(rootView: OverlayView(model: model))
-
-        if let screen = NSScreen.main {
-            let frame = screen.visibleFrame
-            panel.setFrameOrigin(NSPoint(x: frame.midX - 240, y: frame.minY + 48))
-        }
-        return panel
+        panel.contentView = hosting
+        self.panel = panel
+        self.hosting = hosting
     }
 }
 
@@ -69,54 +100,21 @@ struct OverlayView: View {
     @ObservedObject var model: OverlayModel
 
     var body: some View {
-        VStack(spacing: 14) {
-            receipt
+        VStack(alignment: .leading, spacing: 10) {
             content
         }
-        .padding(20)
-        .frame(width: 480)
-        .frame(minHeight: 120)
-        .background(panelBackground)
-        .contentShape(RoundedRectangle(cornerRadius: 24))
-        // Click anywhere on the panel to dismiss — the panel is
-        // non-activating, so the click never steals focus.
+        .padding(.horizontal, 16)
+        .padding(.vertical, 13)
+        .frame(width: 360, alignment: .leading)
+        .background(pillBackground)
+        .contentShape(RoundedRectangle(cornerRadius: 22))
+        // Click anywhere on the pill to dismiss — non-activating, so the
+        // click never steals focus from the app underneath.
         .onTapGesture { model.onDismiss?() }
         .animation(.spring(duration: 0.35), value: stateKey)
     }
 
-    // MARK: - Capture receipt
-
-    /// The receipt: exactly what was captured and sent — nothing more.
-    @ViewBuilder
-    private var receipt: some View {
-        if let image = receiptImage {
-            VStack(spacing: 6) {
-                Image(nsImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(maxHeight: 130)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(.white.opacity(0.2), lineWidth: 1)
-                    )
-                Text(model.receiptNote)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-            }
-        }
-    }
-
-    private var receiptImage: NSImage? {
-        switch model.state {
-        case .thinking(let receipt), .answering(_, let receipt, _):
-            return receipt
-        default:
-            return nil
-        }
-    }
-
-    // MARK: - Main content
+    // MARK: - States
 
     @ViewBuilder
     private var content: some View {
@@ -126,44 +124,74 @@ struct OverlayView: View {
                 Image(systemName: "waveform")
                     .symbolEffect(.variableColor.iterative, options: .repeating)
                     .foregroundStyle(.teal)
-                Text(partial.isEmpty ? "Listening… (release ⌃⌥ when done)" : partial)
+                    .font(.body)
+                Text(partial.isEmpty ? "Listening… release ⌃⌥ when done" : partial)
                     .font(.callout)
                     .foregroundStyle(partial.isEmpty ? .secondary : .primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
-        case .thinking:
-            HStack(spacing: 10) {
-                ProgressView().controlSize(.small)
-                Text("Looking…")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+        case .thinking(let receipt):
+            VStack(alignment: .leading, spacing: 8) {
+                receiptRow(receipt)
+                HStack(spacing: 8) {
+                    ProgressView().controlSize(.small)
+                    Text("Looking…")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
             }
-        case .answering(let text, _, let done):
-            VStack(alignment: .leading, spacing: 6) {
+        case .answering(let text, let receipt, let done):
+            VStack(alignment: .leading, spacing: 8) {
+                receiptRow(receipt)
                 if text.isEmpty {
                     HStack(spacing: 8) {
                         ProgressView().controlSize(.small)
-                        Text("Waiting for \(ProviderSettings.kind == .anthropic ? "Claude" : ProviderSettings.model)… (first local answer loads the model — can take a while)")
+                        Text("Waiting for \(ProviderSettings.kind == .anthropic ? "Claude" : ProviderSettings.model)…")
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     }
                 } else {
                     Text(text)
-                        .font(.body)
+                        .font(.callout)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 if done {
-                    Text("⌃⌥ to ask again · click to dismiss")
+                    Text("⌃⌥ ask again · click to dismiss")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }
             }
         case .error(let message):
-            HStack(spacing: 10) {
+            HStack(alignment: .top, spacing: 10) {
                 Image(systemName: "exclamationmark.triangle")
                     .foregroundStyle(.orange)
                 Text(message)
                     .font(.callout)
                     .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    /// The capture receipt, pill-sized: a small truthful thumbnail of the
+    /// exact frame sent, with the payload note beside it.
+    @ViewBuilder
+    private func receiptRow(_ image: NSImage?) -> some View {
+        if let image {
+            HStack(spacing: 10) {
+                Image(nsImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(height: 46)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .strokeBorder(.white.opacity(0.25), lineWidth: 1)
+                    )
+                Text(model.receiptNote)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -178,14 +206,25 @@ struct OverlayView: View {
     }
 
     @ViewBuilder
-    private var panelBackground: some View {
-        if #available(macOS 26.0, *) {
-            RoundedRectangle(cornerRadius: 24)
-                .fill(.clear)
-                .glassEffect(in: .rect(cornerRadius: 24))
-        } else {
-            RoundedRectangle(cornerRadius: 24)
-                .fill(.ultraThinMaterial)
+    private var pillBackground: some View {
+        ZStack {
+            if #available(macOS 26.0, *) {
+                RoundedRectangle(cornerRadius: 22)
+                    .fill(.clear)
+                    .glassEffect(in: .rect(cornerRadius: 22))
+            } else {
+                RoundedRectangle(cornerRadius: 22)
+                    .fill(.ultraThinMaterial)
+            }
+            RoundedRectangle(cornerRadius: 22)
+                .strokeBorder(
+                    LinearGradient(
+                        colors: [.teal.opacity(0.35), .white.opacity(0.08)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
         }
     }
 }

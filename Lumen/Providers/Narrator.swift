@@ -15,7 +15,7 @@ final class Narrator: NSObject, AVSpeechSynthesizerDelegate {
     }
 
     private let synthesizer = AVSpeechSynthesizer()
-    private var pending: [PointParser.Segment] = []
+    private var pending: [(PointParser.Segment, (() -> Void)?)] = []
     private var speaking = false
 
     /// Fired the instant a segment's audio begins.
@@ -31,7 +31,14 @@ final class Narrator: NSObject, AVSpeechSynthesizerDelegate {
     }
 
     func enqueue(_ segment: PointParser.Segment) {
-        pending.append(segment)
+        pending.append((segment, nil))
+        speakNextIfIdle()
+    }
+
+    /// Enqueues a scripted beat with a custom on-start action — used by the
+    /// onboarding tour, where the choreography isn't model-driven.
+    func enqueue(_ segment: PointParser.Segment, onStart: @escaping () -> Void) {
+        pending.append((segment, onStart))
         speakNextIfIdle()
     }
 
@@ -43,8 +50,9 @@ final class Narrator: NSObject, AVSpeechSynthesizerDelegate {
 
     private func speakNextIfIdle() {
         guard !speaking, !pending.isEmpty else { return }
-        let segment = pending.removeFirst()
+        let (segment, hook) = pending.removeFirst()
         speaking = true
+        hook?()
         onSegmentStart?(segment)
 
         guard !segment.text.isEmpty else {

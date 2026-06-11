@@ -77,6 +77,54 @@ final class AssistantController {
         }
         hotkey.start()
         log.append("app.start")
+
+        // First launch: Lumen introduces itself with its own machinery —
+        // voice, pointer, highlights. The product demos the product.
+        if !UserDefaults.standard.bool(forKey: "onboarding.done") {
+            UserDefaults.standard.set(true, forKey: "onboarding.done")
+            Task {
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                self.runWelcomeTour()
+            }
+        }
+    }
+
+    func runWelcomeTour() {
+        guard let screen = NSScreen.main else { return }
+        answerTask?.cancel()
+        narrator.stop()
+        pointer.hide()
+        autoHideTask?.cancel()
+
+        // Approximate menu-bar region (top-right) in screen points.
+        let menuBarRect = CGRect(x: screen.frame.width - 290, y: 2, width: 270, height: 22)
+
+        struct Beat {
+            let text: String
+            let highlight: CGRect?
+        }
+        let beats = [
+            Beat(text: "Hi — I'm Lumen, your screen-aware assistant. I live up here in your menu bar.",
+                 highlight: menuBarRect),
+            Beat(text: "Hold Control and Option together, ask me anything about your screen, then let go.",
+                 highlight: nil),
+            Beat(text: "Before I answer, I always show you exactly what I captured — and between questions, I see nothing at all.",
+                 highlight: nil),
+            Beat(text: "Flip on X-Ray mode in my menu to watch my whole pipeline run live, timings and all. Let's get to work.",
+                 highlight: menuBarRect),
+        ]
+
+        panel.setNote("Welcome to Lumen")
+        for beat in beats {
+            narrator.enqueue(PointParser.Segment(text: beat.text, annotations: [])) { [weak self] in
+                guard let self else { return }
+                self.panel.show(state: .answering(text: beat.text, receipt: nil, done: false))
+                if let rect = beat.highlight {
+                    self.pointer.enqueueHighlight(rect: rect, label: "Lumen")
+                }
+            }
+        }
+        log.append("onboarding.tour")
     }
 
     func hideOverlays() {
@@ -224,6 +272,7 @@ final class AssistantController {
             xray.model.update("capture", status: .done,
                               detail: "\(capture.pixelWidth)×\(capture.pixelHeight) · self-excluded",
                               ms: elapsedMs())
+            xray.model.receipt = capture.image
         } else {
             xray.model.update("capture", status: .failed, detail: "no frame")
         }
