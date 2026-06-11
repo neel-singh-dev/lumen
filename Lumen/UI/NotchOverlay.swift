@@ -357,15 +357,15 @@ struct NotchView: View {
         case .thinking:
             Text("Thinking…")
                 .font(.caption.weight(.medium))
-                .foregroundStyle(.white.opacity(0.9))
+                .foregroundStyle(DT.Ink.primary)
         case .speaking:
             Text("Speaking")
                 .font(.caption.weight(.medium))
-                .foregroundStyle(.white.opacity(0.9))
+                .foregroundStyle(DT.Ink.primary)
         case .answering:
             Text("Working")
                 .font(.caption.weight(.medium))
-                .foregroundStyle(.white.opacity(0.9))
+                .foregroundStyle(DT.Ink.primary)
         }
     }
 
@@ -402,7 +402,7 @@ struct NotchView: View {
     }
 
     private var accentGradient: LinearGradient {
-        LinearGradient(colors: [.teal, .mint], startPoint: .top, endPoint: .bottom)
+        DT.accent
     }
 
     // MARK: Transcript (opt-in; errors always)
@@ -418,14 +418,14 @@ struct NotchView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                         .overlay(
                             RoundedRectangle(cornerRadius: 6)
-                                .strokeBorder(.white.opacity(0.15), lineWidth: 1)
+                                .strokeBorder(DT.Ink.hairline, lineWidth: 1)
                         )
                     Text(model.receiptNote)
                         .font(.caption2)
-                        .foregroundStyle(.white.opacity(0.5))
+                        .foregroundStyle(DT.Ink.secondary)
                         .lineLimit(2)
                 }
-                Rectangle().fill(.white.opacity(0.08)).frame(height: 1)
+                Rectangle().fill(DT.Ink.well).frame(height: 1)
             }
             ScrollView(.vertical) {
                 HStack(alignment: .top, spacing: 8) {
@@ -435,7 +435,7 @@ struct NotchView: View {
                     }
                     Text(model.transcript.isEmpty ? "…" : model.transcript)
                         .font(.callout)
-                        .foregroundStyle(.white.opacity(0.92))
+                        .foregroundStyle(DT.Ink.primary)
                         .lineSpacing(3)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -487,6 +487,7 @@ private struct NotchSettingsView: View {
 
     @State private var apiKeyDraft = ""
     @State private var keySaved = KeychainStore.load(account: "anthropic") != nil
+    @FocusState private var fieldFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -524,7 +525,7 @@ private struct NotchSettingsView: View {
                     field(icon: "cpu", placeholder: "qwen3-vl", secure: false, text: $localModel) {}
                     Text("Any OpenAI-compatible endpoint · localhost = nothing leaves this Mac")
                         .font(.caption2)
-                        .foregroundStyle(.white.opacity(0.4))
+                        .foregroundStyle(DT.Ink.tertiary)
                 }
             }
 
@@ -537,7 +538,7 @@ private struct NotchSettingsView: View {
                 toggleRow("waveform.path.ecg", "X-Ray", "Live pipeline & privacy evidence", $xrayMode)
                     .onChange(of: xrayMode) { actions.xrayChanged() }
             }
-            .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 13))
+            .background(DT.Ink.well, in: RoundedRectangle(cornerRadius: 13))
 
             // Explore grid
             HStack(spacing: 8) {
@@ -550,12 +551,13 @@ private struct NotchSettingsView: View {
             HStack {
                 Text("on-device by default")
                     .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.25))
+                    .foregroundStyle(DT.Ink.tertiary)
                 Spacer()
                 Button("Quit") { NSApp.terminate(nil) }
                     .buttonStyle(.plain)
                     .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.35))
+                    .foregroundStyle(DT.Ink.tertiary)
+                    .accessibilityLabel("Quit Lumen")
                     .handCursor()
             }
         }
@@ -565,7 +567,7 @@ private struct NotchSettingsView: View {
 
     private var hairline: some View {
         Rectangle()
-            .fill(.white.opacity(0.07))
+            .fill(DT.Ink.hairline)
             .frame(height: 1)
             .padding(.leading, 40)
     }
@@ -580,27 +582,28 @@ private struct NotchSettingsView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Image(systemName: icon)
                     .font(.body)
-                    .foregroundStyle(selected ? AnyShapeStyle(LinearGradient(colors: [.teal, .mint], startPoint: .top, endPoint: .bottom)) : AnyShapeStyle(.white.opacity(0.5)))
+                    .foregroundStyle(selected ? AnyShapeStyle(DT.accent) : AnyShapeStyle(DT.Ink.secondary))
                 Text(title)
                     .font(.callout.weight(.semibold))
-                    .foregroundStyle(.white.opacity(selected ? 1 : 0.7))
+                    .foregroundStyle(selected ? DT.Ink.primary : DT.Ink.secondary)
                 Text(subtitle)
                     .font(.caption2)
-                    .foregroundStyle(.white.opacity(selected ? 0.5 : 0.3))
+                    .foregroundStyle(selected ? DT.Ink.secondary : DT.Ink.tertiary)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(11)
             .background(
                 RoundedRectangle(cornerRadius: 13)
-                    .fill(selected ? .teal.opacity(0.14) : .white.opacity(0.05))
+                    .fill(selected ? Color.teal.opacity(0.14) : DT.Ink.well)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 13)
-                    .strokeBorder(selected ? .teal.opacity(0.55) : .white.opacity(0.08), lineWidth: 1)
+                    .strokeBorder(selected ? Color.teal.opacity(0.55) : DT.Ink.hairline, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Provider: \(title)")
         .handCursor()
     }
 
@@ -620,15 +623,16 @@ private struct NotchSettingsView: View {
             }
             .textFieldStyle(.plain)
             .font(.caption)
-            .foregroundStyle(.white)
+            .foregroundStyle(DT.Ink.primary)
+            .focused($fieldFocused)
             .onSubmit(onSubmit)
         }
         .padding(.horizontal, 11)
         .padding(.vertical, 8)
-        .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 10))
+        .background(DT.Ink.well, in: RoundedRectangle(cornerRadius: DT.radiusWell))
         .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .strokeBorder(.white.opacity(0.08), lineWidth: 1)
+            RoundedRectangle(cornerRadius: DT.radiusWell)
+                .strokeBorder(fieldFocused ? Color.teal.opacity(0.5) : DT.Ink.hairline, lineWidth: 1)
         )
     }
 
@@ -638,14 +642,14 @@ private struct NotchSettingsView: View {
                 .font(.caption)
                 .foregroundStyle(.teal)
                 .frame(width: 24, height: 24)
-                .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 7))
+                .background(DT.Ink.well, in: RoundedRectangle(cornerRadius: 7))
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
                     .font(.callout)
-                    .foregroundStyle(.white.opacity(0.92))
+                    .foregroundStyle(DT.Ink.primary)
                 Text(subtitle)
                     .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.35))
+                    .foregroundStyle(DT.Ink.tertiary)
             }
             Spacer()
             Toggle("", isOn: binding)
@@ -663,6 +667,7 @@ private struct NotchSettingsView: View {
                 binding.wrappedValue.toggle()
             }
         }
+        .accessibilityLabel(title)
         .handCursor()
     }
 
@@ -671,20 +676,21 @@ private struct NotchSettingsView: View {
             VStack(spacing: 5) {
                 Image(systemName: icon)
                     .font(.body)
-                    .foregroundStyle(LinearGradient(colors: [.teal, .mint], startPoint: .top, endPoint: .bottom))
+                    .foregroundStyle(DT.accent)
                 Text(title)
                     .font(.caption2.weight(.medium))
-                    .foregroundStyle(.white.opacity(0.75))
+                    .foregroundStyle(DT.Ink.secondary)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
-            .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
+            .background(DT.Ink.well, in: RoundedRectangle(cornerRadius: 12))
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(.white.opacity(0.07), lineWidth: 1)
+                    .strokeBorder(DT.Ink.hairline, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(title)
         .handCursor()
     }
 }

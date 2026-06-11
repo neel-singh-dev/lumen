@@ -31,6 +31,7 @@ targets:
         # Stable signing identity so TCC permission grants survive rebuilds.
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: C4YDYMFG88
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 
   LumenTests:
     type: bundle.unit-test

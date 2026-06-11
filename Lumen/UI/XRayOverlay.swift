@@ -271,6 +271,7 @@ private struct StageRow: View {
                     if let ms = stage.ms {
                         Text("\(ms) ms")
                             .font(.caption2.monospaced())
+                            .monospacedDigit()
                             .foregroundStyle(.teal)
                     }
                 }
@@ -280,7 +281,7 @@ private struct StageRow: View {
                     .lineLimit(1)
             }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 3)
     }
 
     @ViewBuilder

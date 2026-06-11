@@ -22,24 +22,28 @@ struct HistoryView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List(entries) { entry in
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack {
+                    VStack(alignment: .leading, spacing: 7) {
+                        HStack(alignment: .firstTextBaseline) {
                             Text(entry.question)
                                 .font(.headline)
                             Spacer()
-                            Text(entry.ts, format: .dateTime.hour().minute().day().month())
+                            Text(entry.ts, format: .relative(presentation: .named))
                                 .font(.caption)
                                 .foregroundStyle(.tertiary)
                         }
                         Text(PointParser.process(entry.answer).display)
                             .font(.callout)
                             .foregroundStyle(.secondary)
+                            .lineSpacing(2)
                             .textSelection(.enabled)
                         Text(entry.provider)
-                            .font(.caption2.monospaced())
+                            .font(.caption2.weight(.medium))
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 2)
+                            .background(.teal.opacity(0.15), in: Capsule())
                             .foregroundStyle(.teal)
                     }
-                    .padding(.vertical, 6)
+                    .padding(.vertical, 8)
                 }
                 .listStyle(.inset)
             }
