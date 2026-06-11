@@ -89,6 +89,61 @@ final class AssistantController {
         }
     }
 
+    /// Agent mode, the designed preview: a fully choreographed walkthrough
+    /// of the trust protocol (plan preview → control handoff border →
+    /// instant reclaim) over the REAL elements of the frontmost app. The
+    /// execution layer is the deliberately mocked part — the trust UX is
+    /// the design being demonstrated.
+    func runAgentPreview() {
+        answerTask?.cancel()
+        narrator.stop()
+        pointer.hide()
+        autoHideTask?.cancel()
+        log.append("agent.preview")
+
+        panel.setNote("Agent mode — design preview")
+        let snapshotTask = Task.detached { [axReader] in
+            axReader.snapshotFrontmostApp()
+        }
+
+        Task {
+            let snapshot = await snapshotTask.value
+            let targets = (snapshot?.elements ?? [])
+                .filter { $0.roleName != "statictext" && !$0.label.isEmpty }
+                .prefix(3)
+
+            struct Beat {
+                let text: String
+                let action: () -> Void
+            }
+            var beats: [Beat] = [
+                Beat(text: "This is a preview of agent mode — built on the same element grounding you've already seen.") { [weak self] in
+                    self?.panel.show(state: .answering(
+                        text: "This is a preview of agent mode.", receipt: nil, done: false))
+                },
+                Beat(text: "Before acting, I always show my full plan — every element I would touch, in order, before anything happens.") { },
+            ]
+            for (index, element) in targets.enumerated() {
+                beats.append(Beat(text: "Step \(index + 1): \(element.label).") { [weak self] in
+                    self?.pointer.enqueueHighlight(
+                        rect: element.frame,
+                        label: "Step \(index + 1) · \(element.label)"
+                    )
+                })
+            }
+            beats.append(Beat(text: "When you confirm, this border means I have the cursor. Touch the trackpad at any moment, and control is instantly yours again.") { [weak self] in
+                self?.pointer.setControlBorder(true)
+            })
+            beats.append(Beat(text: "Every step is previewed, logged, and reversible. That's agent mode, the auditable way.") { [weak self] in
+                self?.pointer.setControlBorder(false)
+            })
+
+            for beat in beats {
+                narrator.enqueue(PointParser.Segment(text: beat.text, annotations: []), onStart: beat.action)
+            }
+        }
+    }
+
     func runWelcomeTour() {
         guard let screen = NSScreen.main else { return }
         answerTask?.cancel()
@@ -265,8 +320,13 @@ final class AssistantController {
         log.append("transcript", ["text": question])
         xray.model.update("listen", status: .done, detail: "“\(question.prefix(28))…”", ms: elapsedMs())
 
-        let capture = await captureTask?.value
+        var capture = await captureTask?.value
         let snapshot = await axTask?.value
+        if let raw = capture, let snapshot, !snapshot.secureFrames.isEmpty,
+           let screen = NSScreen.main {
+            capture = raw.redacting(snapshot.secureFrames, screenSize: screen.frame.size)
+            log.append("redact", ["secure_fields": "\(snapshot.secureFrames.count)"])
+        }
         if let capture {
             log.append("capture", ["w": "\(capture.pixelWidth)", "h": "\(capture.pixelHeight)"])
             xray.model.update("capture", status: .done,
@@ -288,9 +348,14 @@ final class AssistantController {
 
         // The receipt discloses the FULL payload: pixels and element list.
         let elementCount = snapshot?.elements.count ?? 0
-        panel.setNote(elementCount > 0
+        let secureCount = snapshot?.secureFrames.count ?? 0
+        var note = elementCount > 0
             ? "Sent: this frame + \(elementCount) UI elements from \(snapshot?.appName ?? "")"
-            : "Sent to the model — exactly this frame")
+            : "Sent to the model — exactly this frame"
+        if secureCount > 0 {
+            note += " · \(secureCount) secure field\(secureCount == 1 ? "" : "s") redacted"
+        }
+        panel.setNote(note)
         panel.show(state: .thinking(receipt: capture?.image))
 
         currentCapture = capture

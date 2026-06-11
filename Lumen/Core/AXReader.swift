@@ -25,11 +25,15 @@ final class AXReader {
     struct Snapshot {
         let appName: String
         let elements: [AXElement]
+        /// Frames of secure text fields (passwords) — redacted from the
+        /// capture payload before anything leaves the machine.
+        let secureFrames: [CGRect]
         private let byID: [Int: AXElement]
 
-        init(appName: String, elements: [AXElement]) {
+        init(appName: String, elements: [AXElement], secureFrames: [CGRect] = []) {
             self.appName = appName
             self.elements = elements
+            self.secureFrames = secureFrames
             self.byID = Dictionary(uniqueKeysWithValues: elements.map { ($0.id, $0) })
         }
 
@@ -80,21 +84,23 @@ final class AXReader {
         let bounds = CGRect(origin: .zero, size: screenSize)
 
         var elements: [AXElement] = []
+        var secureFrames: [CGRect] = []
         var nextID = 1
         var staticTexts = 0
 
         for window in windows.prefix(2) {
-            walk(window, depth: 0, bounds: bounds,
-                 elements: &elements, nextID: &nextID, staticTexts: &staticTexts)
+            walk(window, depth: 0, bounds: bounds, elements: &elements,
+                 secureFrames: &secureFrames, nextID: &nextID, staticTexts: &staticTexts)
             if elements.count >= Self.maxElements { break }
         }
 
-        return Snapshot(appName: appName, elements: elements)
+        return Snapshot(appName: appName, elements: elements, secureFrames: secureFrames)
     }
 
     private func walk(
         _ element: AXUIElement, depth: Int, bounds: CGRect,
-        elements: inout [AXElement], nextID: inout Int, staticTexts: inout Int
+        elements: inout [AXElement], secureFrames: inout [CGRect],
+        nextID: inout Int, staticTexts: inout Int
     ) {
         guard depth < Self.maxDepth, elements.count < Self.maxElements else { return }
 
@@ -102,21 +108,30 @@ final class AXReader {
            let frame = frame(of: element),
            frame.width >= 8, frame.height >= 8,
            frame.intersects(bounds) {
-            let label = label(of: element)
-            let isInteractive = Self.interactiveRoles.contains(role)
-            let isLabeledText = role == "AXStaticText" && !label.isEmpty && staticTexts < Self.maxStaticTexts
+            let subrole: String? = copy(element, kAXSubroleAttribute)
 
-            if isInteractive || isLabeledText {
-                if isLabeledText { staticTexts += 1 }
-                elements.append(AXElement(id: nextID, role: role, label: label, frame: frame))
+            if subrole == "AXSecureTextField" {
+                // Never read, label, or transmit a password field's content.
+                secureFrames.append(frame)
+                elements.append(AXElement(id: nextID, role: role, label: "secure field (redacted)", frame: frame))
                 nextID += 1
+            } else {
+                let label = label(of: element)
+                let isInteractive = Self.interactiveRoles.contains(role)
+                let isLabeledText = role == "AXStaticText" && !label.isEmpty && staticTexts < Self.maxStaticTexts
+
+                if isInteractive || isLabeledText {
+                    if isLabeledText { staticTexts += 1 }
+                    elements.append(AXElement(id: nextID, role: role, label: label, frame: frame))
+                    nextID += 1
+                }
             }
         }
 
         guard let children: [AXUIElement] = copy(element, kAXChildrenAttribute) else { return }
         for child in children.prefix(Self.maxChildrenPerNode) {
-            walk(child, depth: depth + 1, bounds: bounds,
-                 elements: &elements, nextID: &nextID, staticTexts: &staticTexts)
+            walk(child, depth: depth + 1, bounds: bounds, elements: &elements,
+                 secureFrames: &secureFrames, nextID: &nextID, staticTexts: &staticTexts)
             if elements.count >= Self.maxElements { return }
         }
     }

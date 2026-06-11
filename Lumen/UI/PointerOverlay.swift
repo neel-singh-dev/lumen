@@ -43,6 +43,14 @@ final class PointerOverlayController {
         model.clear()
     }
 
+    /// Agent-mode control handoff border ("I have the cursor").
+    func setControlBorder(_ active: Bool) {
+        guard let screen = NSScreen.main else { return }
+        ensurePanel(on: screen)
+        model.setControlBorder(active)
+        if active { hideTask?.cancel() }
+    }
+
     // MARK: - Pacing
 
     private func enqueue(_ stop: TourStop) {
@@ -111,9 +119,27 @@ final class PointerModel: ObservableObject {
     @Published var pointerTarget: CGPoint = .zero
     @Published var pointerLabel: String = ""
     @Published var pointerVisible = false
+    /// Agent-mode "I have the cursor" border around the whole screen.
+    @Published var controlBorderActive = false
+
+    /// Honors the system Reduce Motion setting — springs collapse to
+    /// simple fades for users who asked for less movement.
+    private func animate(_ animation: Animation, _ changes: () -> Void) {
+        if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            withAnimation(.easeOut(duration: 0.15), changes)
+        } else {
+            withAnimation(animation, changes)
+        }
+    }
+
+    func setControlBorder(_ active: Bool) {
+        animate(.easeInOut(duration: 0.4)) {
+            controlBorderActive = active
+        }
+    }
 
     func present(_ stop: PointerOverlayController.TourStop) {
-        withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+        animate(.spring(response: 0.45, dampingFraction: 0.8)) {
             // The spotlight moves on: previous stop becomes a faint trace.
             if let current = currentBox {
                 passedBoxes.append(current)
@@ -136,16 +162,17 @@ final class PointerModel: ObservableObject {
         }
         pointerLabel = stop.kind == .point ? stop.label : ""
         pointerVisible = true
-        withAnimation(.spring(response: 0.55, dampingFraction: 0.75)) {
+        animate(.spring(response: 0.55, dampingFraction: 0.75)) {
             pointerTarget = target
         }
     }
 
     func clear() {
-        withAnimation(.easeOut(duration: 0.25)) {
+        animate(.easeOut(duration: 0.25)) {
             pointerVisible = false
             currentBox = nil
             passedBoxes = []
+            controlBorderActive = false
         }
     }
 }
@@ -155,6 +182,14 @@ struct AnnotationView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
+            if model.controlBorderActive {
+                // "I have the cursor" — unambiguous, screen-wide.
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(.teal.opacity(0.8), lineWidth: 5)
+                    .padding(2)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .transition(.opacity)
+            }
             ForEach(model.passedBoxes) { box in
                 HighlightBox(box: box, isCurrent: false)
             }
@@ -202,6 +237,8 @@ private struct HighlightBox: View {
             .frame(width: rect.width, height: rect.height)
             .overlay(alignment: .topLeading) {
                 // Label only on the current stop — passed boxes stay quiet.
+                // Near the top of the screen the label flips below the box
+                // so it never clips off-screen.
                 if isCurrent, !box.label.isEmpty {
                     Text(box.label)
                         .font(.caption.weight(.semibold))
@@ -211,7 +248,7 @@ private struct HighlightBox: View {
                         .padding(.vertical, 3)
                         .background(.teal, in: Capsule())
                         .foregroundStyle(.black)
-                        .offset(y: -26)
+                        .offset(y: rect.minY < 44 ? rect.height + 6 : -26)
                 }
             }
             .position(x: rect.midX, y: rect.midY)

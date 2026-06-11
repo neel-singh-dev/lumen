@@ -32,6 +32,9 @@ struct LumenApp: App {
             Button("Replay Welcome Tour") {
                 appDelegate.assistant.runWelcomeTour()
             }
+            Button("Agent Mode (design preview)") {
+                appDelegate.assistant.runAgentPreview()
+            }
             Button("Hide Overlays") {
                 appDelegate.assistant.hideOverlays()
             }
