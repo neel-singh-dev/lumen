@@ -98,7 +98,11 @@ final class XRayOverlayController {
     }
 
     private func makePanel(on screen: NSScreen) {
-        let hosting = NSHostingView(rootView: XRayView(model: model))
+        let hosting = NSHostingView(rootView: XRayView(model: model) { [weak self] in
+            // The ✕ — turn the mode off, not just hide the panel.
+            UserDefaults.standard.set(false, forKey: Self.enabledKey)
+            self?.hide()
+        })
         let panel = NSPanel(
             contentRect: NSRect(origin: .zero, size: hosting.fittingSize),
             styleMask: [.nonactivatingPanel, .borderless],
@@ -127,6 +131,7 @@ final class XRayOverlayController {
 
 struct XRayView: View {
     @ObservedObject var model: XRayModel
+    var onClose: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -136,6 +141,12 @@ struct XRayView: View {
                 Text("X-Ray — live pipeline")
                     .font(.caption.weight(.semibold))
                 Spacer()
+                Button(action: onClose) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Close X-Ray mode")
             }
             Text(model.headline)
                 .font(.caption2.monospaced())

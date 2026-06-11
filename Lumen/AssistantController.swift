@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 
 /// The summon → listen → capture → reason → point loop.
 ///
@@ -8,7 +9,6 @@ import AppKit
 @MainActor
 final class AssistantController {
     private let hotkey = HotkeyMonitor()
-    private let panel = OverlayPanelController()
     private let pointer = PointerOverlayController()
     private let capturer = ScreenCapturer()
     private let axReader = AXReader()
@@ -50,6 +50,15 @@ final class AssistantController {
 
     func start() {
         AppleSpeechTranscriber.requestPermissions()
+        notch.actions = NotchActions(
+            setAPIKey: { [weak self] in self?.promptForAPIKey() },
+            configureLocal: { [weak self] in self?.promptForLocalProvider() },
+            openHistory: { [weak self] in self?.openHistory() },
+            welcomeTour: { [weak self] in self?.runWelcomeTour() },
+            agentPreview: { [weak self] in self?.runAgentPreview() },
+            xrayChanged: { [weak self] in self?.xrayVisibilityChanged() }
+        )
+        notch.set(.idle)
         narrator.onSegmentStart = { [weak self] segment in
             guard let self else { return }
             // A new beat means narration is alive — no hiding mid-tour.
@@ -62,12 +71,12 @@ final class AssistantController {
         narrator.onIdle = { [weak self] in
             guard let self else { return }
             self.xray.model.update("narrate", status: .done, ms: self.elapsedMs())
-            self.notch.set(.hidden)
+            self.notch.set(.idle)
             self.autoHideTask?.cancel()
             self.autoHideTask = Task {
                 try? await Task.sleep(nanoseconds: 12_000_000_000)
                 guard !Task.isCancelled else { return }
-                self.panel.hide()
+                self.notch.clearOverlay()
                 self.pointer.hide()
             }
         }
@@ -104,7 +113,7 @@ final class AssistantController {
         autoHideTask?.cancel()
         log.append("agent.preview")
 
-        panel.setNote("Agent mode — design preview")
+        notch.setReceipt(nil, note: "")
         let snapshotTask = Task.detached { [axReader] in
             axReader.snapshotFrontmostApp()
         }
@@ -120,10 +129,7 @@ final class AssistantController {
                 let action: () -> Void
             }
             var beats: [Beat] = [
-                Beat(text: "This is a preview of agent mode — built on the same element grounding you've already seen.") { [weak self] in
-                    self?.panel.show(state: .answering(
-                        text: "This is a preview of agent mode.", receipt: nil, done: false))
-                },
+                Beat(text: "This is a preview of agent mode — built on the same element grounding you've already seen.") { },
                 Beat(text: "Before acting, I always show my full plan — every element I would touch, in order, before anything happens.") { },
             ]
             for (index, element) in targets.enumerated() {
@@ -142,7 +148,12 @@ final class AssistantController {
             })
 
             for beat in beats {
-                narrator.enqueue(PointParser.Segment(text: beat.text, annotations: []), onStart: beat.action)
+                narrator.enqueue(PointParser.Segment(text: beat.text, annotations: [])) { [weak self] in
+                    beat.action()
+                    if NotchOverlayController.transcriptEnabled {
+                        self?.notch.showTranscript(beat.text)
+                    }
+                }
             }
         }
     }
@@ -172,11 +183,13 @@ final class AssistantController {
                  highlight: menuBarRect),
         ]
 
-        panel.setNote("Welcome to Lumen")
+        notch.setReceipt(nil, note: "")
         for beat in beats {
             narrator.enqueue(PointParser.Segment(text: beat.text, annotations: [])) { [weak self] in
                 guard let self else { return }
-                self.panel.show(state: .answering(text: beat.text, receipt: nil, done: false))
+                if NotchOverlayController.transcriptEnabled {
+                    self.notch.showTranscript(beat.text)
+                }
                 if let rect = beat.highlight {
                     self.pointer.enqueueHighlight(rect: rect, label: "Lumen")
                 }
@@ -189,10 +202,24 @@ final class AssistantController {
         answerTask?.cancel()
         autoHideTask?.cancel()
         narrator.stop()
-        panel.hide()
         pointer.hide()
         xray.hide()
-        notch.set(.hidden)
+        notch.clearOverlay()
+    }
+
+    private var historyWindow: NSWindow?
+
+    func openHistory() {
+        if historyWindow == nil {
+            let window = NSWindow(contentViewController: NSHostingController(rootView: HistoryView()))
+            window.title = "Lumen — History"
+            window.setContentSize(NSSize(width: 540, height: 480))
+            window.isReleasedWhenClosed = false
+            window.center()
+            historyWindow = window
+        }
+        historyWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     func xrayVisibilityChanged() {
@@ -291,8 +318,9 @@ final class AssistantController {
             try transcriber.start()
         } catch {
             log.append("stt.start_failed", ["message": error.localizedDescription])
-            notch.set(.hidden)
-            panel.show(state: .error("Microphone unavailable: \(error.localizedDescription)"))
+            notch.set(.idle)
+            notch.showTranscript("Microphone unavailable: \(error.localizedDescription)", isError: true)
+            scheduleOverlayClear(after: 6)
             return
         }
 
@@ -321,13 +349,9 @@ final class AssistantController {
             // Don't vanish silently — an empty transcript is the most common
             // symptom of a permissions problem, so say so.
             log.append("transcript.empty")
-            notch.set(.hidden)
-            panel.show(state: .error("Didn't catch any speech. Check System Settings → Privacy → Microphone and Speech Recognition for Lumen."))
-            autoHideTask = Task {
-                try? await Task.sleep(nanoseconds: 6_000_000_000)
-                guard !Task.isCancelled else { return }
-                panel.hide()
-            }
+            notch.set(.idle)
+            notch.showTranscript("Didn't catch any speech. Check System Settings → Privacy → Microphone and Speech Recognition for Lumen.", isError: true)
+            scheduleOverlayClear(after: 6)
             return
         }
         log.append("transcript", ["text": question])
@@ -360,6 +384,8 @@ final class AssistantController {
         xray.model.update("reason", status: .active)
 
         // The receipt discloses the FULL payload: pixels and element list.
+        // It renders in the notch transcript card — unless X-Ray is open
+        // and already showing the same evidence.
         let elementCount = snapshot?.elements.count ?? 0
         let secureCount = snapshot?.secureFrames.count ?? 0
         var note = elementCount > 0
@@ -368,8 +394,10 @@ final class AssistantController {
         if secureCount > 0 {
             note += " · \(secureCount) secure field\(secureCount == 1 ? "" : "s") redacted"
         }
-        panel.setNote(note)
-        panel.show(state: .thinking(receipt: capture?.image))
+        notch.setReceipt(
+            XRayOverlayController.isEnabled ? nil : capture?.image,
+            note: note
+        )
 
         currentCapture = capture
         currentSnapshot = snapshot
@@ -399,7 +427,9 @@ final class AssistantController {
                 }
                 buffer += delta
                 let (display, annotations) = PointParser.process(buffer)
-                panel.show(state: .answering(text: display, receipt: capture?.image, done: false))
+                if NotchOverlayController.transcriptEnabled {
+                    notch.showTranscript(display)
+                }
 
                 if speechOn {
                     // Speech is the pacer: each completed sentence is voiced,
@@ -438,12 +468,8 @@ final class AssistantController {
                 // not an answer — say so (e.g. a thinking model that burned
                 // its whole budget on hidden reasoning).
                 log.append("answer.empty", ["latency_ms": "\(Int(Date().timeIntervalSince(started) * 1000))"])
-                panel.show(state: .error("The model finished without producing an answer. If you're using a local thinking model, it may have spent its whole token budget reasoning."))
-                autoHideTask = Task {
-                    try? await Task.sleep(nanoseconds: 8_000_000_000)
-                    guard !Task.isCancelled else { return }
-                    panel.hide()
-                }
+                notch.showTranscript("The model finished without producing an answer. If you're using a local thinking model, it may have spent its whole token budget reasoning.", isError: true)
+                scheduleOverlayClear(after: 8)
                 return
             }
             xray.model.update("stream", status: .done,
@@ -451,9 +477,11 @@ final class AssistantController {
                               ms: elapsedMs())
             if !speechOn {
                 xray.model.update("narrate", status: .done, detail: "muted")
-                notch.set(.hidden)
+                notch.set(.idle)
             }
-            panel.show(state: .answering(text: display, receipt: capture?.image, done: true))
+            if NotchOverlayController.transcriptEnabled {
+                notch.showTranscript(display)
+            }
             ConversationStore.shared.append(
                 question: question,
                 answer: buffer,
@@ -469,24 +497,25 @@ final class AssistantController {
             if !speechOn {
                 // With narration on, the hide countdown starts when the
                 // narrator goes idle — never while the voice is mid-tour.
-                autoHideTask = Task {
-                    try? await Task.sleep(nanoseconds: 15_000_000_000)
-                    guard !Task.isCancelled else { return }
-                    panel.hide()
-                    pointer.hide()
-                }
+                scheduleOverlayClear(after: 15)
             }
         } catch is CancellationError {
             // New summon interrupted this answer — expected.
         } catch {
             log.append("error", ["message": error.localizedDescription])
-            notch.set(.hidden)
-            panel.show(state: .error(error.localizedDescription))
-            autoHideTask = Task {
-                try? await Task.sleep(nanoseconds: 8_000_000_000)
-                guard !Task.isCancelled else { return }
-                panel.hide()
-            }
+            notch.set(.idle)
+            notch.showTranscript(error.localizedDescription, isError: true)
+            scheduleOverlayClear(after: 8)
+        }
+    }
+
+    private func scheduleOverlayClear(after seconds: UInt64) {
+        autoHideTask?.cancel()
+        autoHideTask = Task {
+            try? await Task.sleep(nanoseconds: seconds * 1_000_000_000)
+            guard !Task.isCancelled else { return }
+            notch.clearOverlay()
+            pointer.hide()
         }
     }
 

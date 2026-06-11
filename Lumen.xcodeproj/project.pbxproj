@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		08FA74472821213E1DD85C39 /* ConversationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D4F2E081D7420B54044BDB /* ConversationStore.swift */; };
 		0DC62F05662D7B90FD628714 /* PointerOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5008652FC299845E0BC82123 /* PointerOverlay.swift */; };
-		11734D7722DDD01CB3B58183 /* OverlayPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4DF0975FE6476F287403E55 /* OverlayPanel.swift */; };
 		1587668F604E2A37E27990D2 /* PointParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1391E594655421C6F79C479C /* PointParser.swift */; };
 		2CE0652B7E3CF08DAD46928B /* XRayOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AAC9FFF6959532ABD27E442 /* XRayOverlay.swift */; };
 		2E19BECB8B34BDD46A26F0E3 /* AXReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0646C792DA6DFF558497050 /* AXReader.swift */; };
@@ -48,7 +47,6 @@
 		B52B4AC2333DFBA0C08DB196 /* AssistantController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantController.swift; sourceTree = "<group>"; };
 		BAE60B0500F5D871839332C8 /* NotchOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchOverlay.swift; sourceTree = "<group>"; };
 		D3FCBEFA855437E1DC340AA9 /* ProviderSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderSettings.swift; sourceTree = "<group>"; };
-		F4DF0975FE6476F287403E55 /* OverlayPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayPanel.swift; sourceTree = "<group>"; };
 		FB69623C5BC7D5FECD47DBA0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -66,7 +64,6 @@
 			children = (
 				11976F97AA68CC747BE6FAB5 /* HistoryWindow.swift */,
 				BAE60B0500F5D871839332C8 /* NotchOverlay.swift */,
-				F4DF0975FE6476F287403E55 /* OverlayPanel.swift */,
 				5008652FC299845E0BC82123 /* PointerOverlay.swift */,
 				2AAC9FFF6959532ABD27E442 /* XRayOverlay.swift */,
 			);
@@ -190,7 +187,6 @@
 				C10E34BBD555BCB115A625DB /* Narrator.swift in Sources */,
 				E0B534EBF866D3C155B1618E /* NotchOverlay.swift in Sources */,
 				A9581F05F7D830A5B94A4F53 /* OpenAICompatibleReasoner.swift in Sources */,
-				11734D7722DDD01CB3B58183 /* OverlayPanel.swift in Sources */,
 				1587668F604E2A37E27990D2 /* PointParser.swift in Sources */,
 				0DC62F05662D7B90FD628714 /* PointerOverlay.swift in Sources */,
 				EA89A4E1BC58F2F83BCF4F18 /* ProviderSettings.swift in Sources */,
