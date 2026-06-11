@@ -9,3 +9,5 @@ DerivedData/
 
 # macOS
 .DS_Store
+dist/
+build/
