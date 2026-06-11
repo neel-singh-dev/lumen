@@ -51,8 +51,6 @@ final class AssistantController {
     func start() {
         AppleSpeechTranscriber.requestPermissions()
         notch.actions = NotchActions(
-            setAPIKey: { [weak self] in self?.promptForAPIKey() },
-            configureLocal: { [weak self] in self?.promptForLocalProvider() },
             openHistory: { [weak self] in self?.openHistory() },
             welcomeTour: { [weak self] in self?.runWelcomeTour() },
             agentPreview: { [weak self] in self?.runAgentPreview() },
