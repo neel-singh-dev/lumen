@@ -93,7 +93,8 @@ final class PointerModel: ObservableObject {
     func addBox(rect: CGRect, label: String) {
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             boxes.append(Box(rect: rect, label: label))
-            if boxes.count > 3 { boxes.removeFirst(boxes.count - 3) }
+            // Tour mode shows many highlights; cap to keep the screen legible.
+            if boxes.count > 8 { boxes.removeFirst(boxes.count - 8) }
         }
     }
 

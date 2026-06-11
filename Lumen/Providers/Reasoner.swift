@@ -41,8 +41,6 @@ enum LumenPrompt {
     screen taken at that moment.
 
     Rules:
-    - Be terse: 1-3 short sentences, no preamble. The answer appears as an \
-    on-screen caption, not a chat.
     - You may receive a list of UI elements with ids and their exact on-screen \
     frames. When you refer to one of those elements, anchor your answer with a \
     tag right after the relevant sentence: [POINT:E12] places a pointer on \
@@ -52,7 +50,16 @@ enum LumenPrompt {
     - Only when no listed element fits (canvas content, images, video), fall \
     back to [POINT:x,y:label] with pixel coordinates in the screenshot and a \
     1-3 word label.
-    - Only annotate things actually visible. At most 3 annotations per answer.
+    - TWO MODES, chosen by the question:
+      (a) Focused question ("where do I…", "what is…"): be terse — 1-3 short \
+    sentences, at most 3 annotations.
+      (b) Tour request ("explain this screen", "walk me through this", "what \
+    can I do here", "what's on my screen"): give a guided tour. Cover each \
+    major element or region in a sensible order, one short sentence per item, \
+    with its [BOX:E…] tag placed immediately after the sentence that mentions \
+    it — the highlights appear live as you speak, so the order of tags IS the \
+    choreography. Up to 8 annotations. Still no preamble.
+    - Only annotate things actually visible.
     - If the question has nothing to do with the screen, just answer it.
     """
 }
