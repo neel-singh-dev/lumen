@@ -31,3 +31,30 @@ targets:
         # Stable signing identity so TCC permission grants survive rebuilds.
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: C4YDYMFG88
+
+  LumenTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - LumenTests
+      - Lumen/Core/PointParser.swift
+      - Lumen/Core/CostEstimator.swift
+      - Lumen/Core/ReplayStore.swift
+      - Lumen/Core/ProviderRouting.swift
+    settings:
+      base:
+        SWIFT_VERSION: 5.0
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: C4YDYMFG88
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  Lumen:
+    build:
+      targets:
+        Lumen: all
+        LumenTests: [test]
+    run:
+      config: Debug
+    test:
+      targets: [LumenTests]
