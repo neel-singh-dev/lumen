@@ -1,6 +1,14 @@
 import AppKit
 import SwiftUI
 
+/// Borderless windows can't become key by default — which silently makes
+/// every text field inside them dead to the keyboard. This is the standard
+/// Spotlight-style fix: keyable, but still non-activating (clicking a field
+/// grabs keyboard focus without bringing the whole app forward).
+final class KeyableNotchPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+}
+
 extension View {
     /// macOS SwiftUI doesn't show the pointing hand on buttons by itself —
     /// every clickable element opts in.
@@ -46,6 +54,10 @@ final class NotchModel: ObservableObject {
 
     /// Called by the view when it toggles something that changes layout.
     var onLayoutChange: (() -> Void)?
+
+    /// True while the panel holds keyboard focus (user typing in a field) —
+    /// the hover-close must not yank the panel away mid-keystroke.
+    var isPanelKey: (() -> Bool)?
 }
 
 /// Wiring from the settings panel back into the app.
@@ -142,7 +154,7 @@ final class NotchOverlayController {
         guard panel == nil, let screen = NSScreen.lumen else { return }
         model.notchSize = Self.notchMetrics(for: screen)
         let hosting = NSHostingView(rootView: NotchView(model: model, actions: actions))
-        let panel = NSPanel(
+        let panel = KeyableNotchPanel(
             contentRect: NSRect(origin: .zero, size: hosting.fittingSize),
             styleMask: [.nonactivatingPanel, .borderless],
             backing: .buffered,
@@ -162,6 +174,7 @@ final class NotchOverlayController {
         self.hosting = hosting
 
         model.onLayoutChange = { [weak self] in self?.resize() }
+        model.isPanelKey = { [weak panel] in panel?.isKeyWindow ?? false }
 
         position(panel, on: screen)
         panel.orderFrontRegardless()
@@ -437,6 +450,8 @@ struct NotchView: View {
             hoverCloseTask = Task {
                 try? await Task.sleep(nanoseconds: 400_000_000)
                 guard !Task.isCancelled else { return }
+                // Never close while the user is typing in a field.
+                guard !(model.isPanelKey?() ?? false) else { return }
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                     model.showSettings = false
                 }
