@@ -22,6 +22,7 @@
 		B9DD406AF0A31BD3CAE427AF /* AssistantController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B52B4AC2333DFBA0C08DB196 /* AssistantController.swift */; };
 		C10E34BBD555BCB115A625DB /* Narrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B063CB6CC8FD199740F5D66 /* Narrator.swift */; };
 		C8CBAB7B72615D0675D19B07 /* ScreenCapturer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1ACBE10DE119731821C21A /* ScreenCapturer.swift */; };
+		C8DF9825A7ED190A7572F48E /* TourEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C875A552B4B6F8D6AC8641 /* TourEffects.swift */; };
 		E0B534EBF866D3C155B1618E /* NotchOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE60B0500F5D871839332C8 /* NotchOverlay.swift */; };
 		EA89A4E1BC58F2F83BCF4F18 /* ProviderSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3FCBEFA855437E1DC340AA9 /* ProviderSettings.swift */; };
 		F983BC5FBEB94B06CAB69892 /* Reasoner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 027B2856B9E68A028D97F9ED /* Reasoner.swift */; };
@@ -41,6 +42,7 @@
 		8B063CB6CC8FD199740F5D66 /* Narrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Narrator.swift; sourceTree = "<group>"; };
 		997F5D73AAAE65A3B0335B1B /* Transcriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transcriber.swift; sourceTree = "<group>"; };
 		A13CDE23B9C1246F4A4D6F31 /* HotkeyMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyMonitor.swift; sourceTree = "<group>"; };
+		A2C875A552B4B6F8D6AC8641 /* TourEffects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TourEffects.swift; sourceTree = "<group>"; };
 		A9BED7C9127526606A596340 /* LumenApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LumenApp.swift; sourceTree = "<group>"; };
 		AA1ACBE10DE119731821C21A /* ScreenCapturer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCapturer.swift; sourceTree = "<group>"; };
 		B0646C792DA6DFF558497050 /* AXReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXReader.swift; sourceTree = "<group>"; };
@@ -65,6 +67,7 @@
 				11976F97AA68CC747BE6FAB5 /* HistoryWindow.swift */,
 				BAE60B0500F5D871839332C8 /* NotchOverlay.swift */,
 				5008652FC299845E0BC82123 /* PointerOverlay.swift */,
+				A2C875A552B4B6F8D6AC8641 /* TourEffects.swift */,
 				2AAC9FFF6959532ABD27E442 /* XRayOverlay.swift */,
 			);
 			path = UI;
@@ -192,6 +195,7 @@
 				EA89A4E1BC58F2F83BCF4F18 /* ProviderSettings.swift in Sources */,
 				F983BC5FBEB94B06CAB69892 /* Reasoner.swift in Sources */,
 				C8CBAB7B72615D0675D19B07 /* ScreenCapturer.swift in Sources */,
+				C8DF9825A7ED190A7572F48E /* TourEffects.swift in Sources */,
 				ADCC7A9DD14801912930EAE1 /* Transcriber.swift in Sources */,
 				2CE0652B7E3CF08DAD46928B /* XRayOverlay.swift in Sources */,
 			);

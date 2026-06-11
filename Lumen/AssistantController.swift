@@ -16,6 +16,8 @@ final class AssistantController {
     private let narrator = Narrator()
     private let xray = XRayOverlayController()
     private let notch = NotchOverlayController()
+    private let tourFX = TourFXController()
+    private var tourTimeout: Task<Void, Never>?
     private let log = EventLog()
     private var turnStart = Date()
 
@@ -160,41 +162,51 @@ final class AssistantController {
     }
 
     func runWelcomeTour() {
-        guard let screen = NSScreen.main else { return }
         answerTask?.cancel()
         narrator.stop()
         pointer.hide()
         autoHideTask?.cancel()
+        tourTimeout?.cancel()
+        notch.setReceipt(nil, note: "")
 
-        // Approximate menu-bar region (top-right) in screen points.
-        let menuBarRect = CGRect(x: screen.frame.width - 290, y: 2, width: 270, height: 22)
-
+        // The show: edge glow says "AI is present", ripples introduce the
+        // notch, keycaps teach the chord — and the final beat is an
+        // invitation, so the user's first real summon completes the tour.
         struct Beat {
             let text: String
-            let highlight: CGRect?
+            let fx: () -> Void
         }
         let beats = [
-            Beat(text: "Hi — I'm Lumen, your screen-aware assistant. I live up here in your menu bar.",
-                 highlight: menuBarRect),
-            Beat(text: "Hold Control and Option together, ask me anything about your screen, then let go.",
-                 highlight: nil),
-            Beat(text: "Before I answer, I always show you exactly what I captured — and between questions, I see nothing at all.",
-                 highlight: nil),
-            Beat(text: "Flip on X-Ray mode in my menu to watch my whole pipeline run live, timings and all. Let's get to work.",
-                 highlight: menuBarRect),
+            Beat(text: "Hey — I'm Lumen. I live right here, in your notch.") { [weak self] in
+                self?.tourFX.set(glow: true, ripples: true)
+            },
+            Beat(text: "I can see your screen — but only in the moment you ask. And I always show you exactly what I captured, with passwords blacked out before anything leaves this Mac.") { [weak self] in
+                self?.tourFX.set(ripples: false)
+            },
+            Beat(text: "Hover me anytime for settings — and flip on X-Ray to literally watch my mind work.") { [weak self] in
+                self?.tourFX.set(ripples: true)
+            },
+            Beat(text: "Now you. Hold Control and Option together… and ask what's on your screen.") { [weak self] in
+                self?.tourFX.set(ripples: false, keycaps: true)
+            },
         ]
 
-        notch.setReceipt(nil, note: "")
         for beat in beats {
             narrator.enqueue(PointParser.Segment(text: beat.text, annotations: [])) { [weak self] in
                 guard let self else { return }
+                beat.fx()
                 if NotchOverlayController.transcriptEnabled {
                     self.notch.showTranscript(beat.text)
                 }
-                if let rect = beat.highlight {
-                    self.pointer.enqueueHighlight(rect: rect, label: "Lumen")
-                }
             }
+        }
+
+        // Keycaps + glow keep inviting until the first summon (which clears
+        // them) or a timeout — never forever.
+        tourTimeout = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 60_000_000_000)
+            guard !Task.isCancelled else { return }
+            self?.tourFX.clear()
         }
         log.append("onboarding.tour")
     }
@@ -202,10 +214,12 @@ final class AssistantController {
     func hideOverlays() {
         answerTask?.cancel()
         autoHideTask?.cancel()
+        tourTimeout?.cancel()
         narrator.stop()
         pointer.hide()
         xray.hide()
         notch.clearOverlay()
+        tourFX.clear()
     }
 
     private var historyWindow: NSWindow?
@@ -292,6 +306,9 @@ final class AssistantController {
         autoHideTask?.cancel()
         narrator.stop()
         pointer.hide()
+        // The user acting is the end of any tour theater.
+        tourTimeout?.cancel()
+        tourFX.clear()
         turnStart = Date()
         xray.model.reset(provider: ProviderSettings.displayName)
         xray.showIfEnabled()
