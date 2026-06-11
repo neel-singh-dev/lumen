@@ -492,21 +492,15 @@ private struct NotchSettingsView: View {
         VStack(alignment: .leading, spacing: 14) {
             // Provider cards
             HStack(spacing: 8) {
-                providerCard(
-                    kind: ProviderKind.anthropic.rawValue,
-                    icon: "sparkle",
-                    title: "Claude",
-                    subtitle: "api.anthropic.com"
-                )
-                providerCard(
-                    kind: ProviderKind.openaiCompatible.rawValue,
-                    icon: "desktopcomputer",
-                    title: "Local",
-                    subtitle: "fully on this Mac"
-                )
+                providerCard(kind: ProviderKind.anthropic.rawValue, icon: "sparkle",
+                             title: "Claude", subtitle: "api.anthropic.com")
+                providerCard(kind: ProviderKind.openaiCompatible.rawValue, icon: "desktopcomputer",
+                             title: "Local", subtitle: "on this Mac")
+                providerCard(kind: ProviderKind.demo.rawValue, icon: "play.circle",
+                             title: "Demo", subtitle: "offline")
             }
 
-            // Inline credentials — no dialogs.
+            // Inline credentials — no dialogs. Demo shows neither.
             if providerKind == ProviderKind.anthropic.rawValue {
                 VStack(alignment: .leading, spacing: 6) {
                     field(icon: "key.fill",
@@ -524,7 +518,7 @@ private struct NotchSettingsView: View {
                             .foregroundStyle(.teal.opacity(0.8))
                     }
                 }
-            } else {
+            } else if providerKind == ProviderKind.openaiCompatible.rawValue {
                 VStack(alignment: .leading, spacing: 6) {
                     field(icon: "network", placeholder: "http://localhost:11434", secure: false, text: $baseURL) {}
                     field(icon: "cpu", placeholder: "qwen3-vl", secure: false, text: $localModel) {}

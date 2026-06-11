@@ -3,6 +3,7 @@ import Foundation
 enum ProviderKind: String {
     case anthropic
     case openaiCompatible = "openai-compatible"
+    case demo
 }
 
 /// BYOK provider selection. Non-secret config lives in UserDefaults;
@@ -38,8 +39,12 @@ enum ProviderSettings {
 
     static var displayName: String {
         switch kind {
-        case .anthropic: return "Claude (\(AnthropicReasoner.defaultModel))"
+        case .anthropic:
+            return KeychainStore.load(account: "anthropic") == nil
+                ? "Demo (offline) — no key set"
+                : "Claude (\(AnthropicReasoner.defaultModel))"
         case .openaiCompatible: return "\(model) @ \(baseURL)"
+        case .demo: return "Demo (offline)"
         }
     }
 }

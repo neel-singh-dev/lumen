@@ -47,14 +47,19 @@ final class AssistantController {
     /// Resolved per request so a provider switch in the menu takes effect
     /// on the very next summon — including mid-demo hot-swaps.
     private var reasoner: Reasoner {
-        switch ProviderSettings.kind {
+        switch ProviderRouting.resolve(
+            kindRaw: ProviderSettings.kind.rawValue,
+            hasAnthropicKey: KeychainStore.load(account: "anthropic") != nil
+        ) {
         case .anthropic:
             return AnthropicReasoner()
-        case .openaiCompatible:
+        case .openAICompatible:
             return OpenAICompatibleReasoner(
                 baseURL: ProviderSettings.baseURL,
                 model: ProviderSettings.model
             )
+        case .demo:
+            return FixtureReasoner()
         }
     }
 

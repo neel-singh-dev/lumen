@@ -33,11 +33,19 @@ final class XRayModel: ObservableObject {
         headline = provider
         receipt = nil
         costLine = ""
-        destination = ProviderSettings.kind == .anthropic
-            ? "api.anthropic.com · TLS"
-            : (ProviderSettings.baseURL.contains("localhost") || ProviderSettings.baseURL.contains("127.0.0.1")
+        switch ProviderRouting.resolve(
+            kindRaw: ProviderSettings.kind.rawValue,
+            hasAnthropicKey: KeychainStore.load(account: "anthropic") != nil
+        ) {
+        case .anthropic:
+            destination = "api.anthropic.com · TLS"
+        case .openAICompatible:
+            destination = ProviderSettings.baseURL.contains("localhost") || ProviderSettings.baseURL.contains("127.0.0.1")
                 ? "localhost — fully local, nothing leaves this Mac"
-                : ProviderSettings.baseURL)
+                : ProviderSettings.baseURL
+        case .demo:
+            destination = "no network — offline demo fixture"
+        }
         stages = [
             Stage(id: "listen", title: "Listen", subsystem: "Apple Speech · on-device"),
             Stage(id: "capture", title: "Capture", subsystem: "ScreenCaptureKit"),

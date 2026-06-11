@@ -21,6 +21,8 @@
 		8CBEB53B14C1D46647F16808 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82CA2416103C806FC560933E /* KeychainStore.swift */; };
 		9F117C7EAF390BA67A19CD48 /* SmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18F2FA213869BED85072B8E5 /* SmokeTests.swift */; };
 		A9581F05F7D830A5B94A4F53 /* OpenAICompatibleReasoner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C121CB428012DD38B99D6A1 /* OpenAICompatibleReasoner.swift */; };
+		FA3BC19200000001000F1A4E /* FixtureReasoner.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA3BC19100000001000F1A4E /* FixtureReasoner.swift */; };
+		FA3BC19300000002000F1A4E /* ProviderRoutingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA3BC19400000002000F1A4E /* ProviderRoutingTests.swift */; };
 		AB1E8E6A2471EE4B50049C67 /* ProviderRouting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13E1D84A6B8ADD8A496C7BDE /* ProviderRouting.swift */; };
 		ADCC7A9DD14801912930EAE1 /* Transcriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 997F5D73AAAE65A3B0335B1B /* Transcriber.swift */; };
 		B2D9EB5E7CAD1D76145E3F6E /* ReplayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9093A5311D1A2C7A36335073 /* ReplayStore.swift */; };
@@ -53,6 +55,8 @@
 		5008652FC299845E0BC82123 /* PointerOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointerOverlay.swift; sourceTree = "<group>"; };
 		58E6DC07551B9EDCE2F4D7CA /* EventLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventLog.swift; sourceTree = "<group>"; };
 		7C121CB428012DD38B99D6A1 /* OpenAICompatibleReasoner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAICompatibleReasoner.swift; sourceTree = "<group>"; };
+		FA3BC19100000001000F1A4E /* FixtureReasoner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureReasoner.swift; sourceTree = "<group>"; };
+		FA3BC19400000002000F1A4E /* ProviderRoutingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderRoutingTests.swift; sourceTree = "<group>"; };
 		82CA2416103C806FC560933E /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		898C8E0D85F797F4EA2BD148 /* ReplayStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReplayStoreTests.swift; sourceTree = "<group>"; };
 		8B063CB6CC8FD199740F5D66 /* Narrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Narrator.swift; sourceTree = "<group>"; };
@@ -97,6 +101,7 @@
 			isa = PBXGroup;
 			children = (
 				EE02385B4E4A13F65E0A7393 /* CostEstimatorTests.swift */,
+				FA3BC19400000002000F1A4E /* ProviderRoutingTests.swift */,
 				898C8E0D85F797F4EA2BD148 /* ReplayStoreTests.swift */,
 				18F2FA213869BED85072B8E5 /* SmokeTests.swift */,
 			);
@@ -146,6 +151,7 @@
 		A36ECEE980210EFD085D1AE8 /* Providers */ = {
 			isa = PBXGroup;
 			children = (
+				FA3BC19100000001000F1A4E /* FixtureReasoner.swift */,
 				8B063CB6CC8FD199740F5D66 /* Narrator.swift */,
 				7C121CB428012DD38B99D6A1 /* OpenAICompatibleReasoner.swift */,
 				D3FCBEFA855437E1DC340AA9 /* ProviderSettings.swift */,
@@ -247,6 +253,7 @@
 				773FA1361E95D40DD6310993 /* LumenApp.swift in Sources */,
 				C10E34BBD555BCB115A625DB /* Narrator.swift in Sources */,
 				E0B534EBF866D3C155B1618E /* NotchOverlay.swift in Sources */,
+				FA3BC19200000001000F1A4E /* FixtureReasoner.swift in Sources */,
 				A9581F05F7D830A5B94A4F53 /* OpenAICompatibleReasoner.swift in Sources */,
 				1587668F604E2A37E27990D2 /* PointParser.swift in Sources */,
 				0DC62F05662D7B90FD628714 /* PointerOverlay.swift in Sources */,
@@ -270,6 +277,7 @@
 				B97D11639CBC542CCD29426B /* CostEstimatorTests.swift in Sources */,
 				C6F9304AEE8CFDCE0C3F8A85 /* PointParser.swift in Sources */,
 				AB1E8E6A2471EE4B50049C67 /* ProviderRouting.swift in Sources */,
+				FA3BC19300000002000F1A4E /* ProviderRoutingTests.swift in Sources */,
 				C70F3C2BF96E812EC085CEB5 /* ReplayStore.swift in Sources */,
 				5AB22C3711B42D154116DC26 /* ReplayStoreTests.swift in Sources */,
 				9F117C7EAF390BA67A19CD48 /* SmokeTests.swift in Sources */,
