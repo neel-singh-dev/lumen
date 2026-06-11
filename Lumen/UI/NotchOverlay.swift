@@ -82,6 +82,7 @@ final class NotchOverlayController {
 
     private var panel: NSPanel?
     private var hosting: NSHostingView<NotchView>?
+    private let log = EventLog()
 
     init() {
         // Displays come and go (lid, docks, projectors) — re-anchor to the
@@ -205,6 +206,15 @@ final class NotchOverlayController {
             x: screen.frame.midX - panel.frame.width / 2,
             y: screen.frame.maxY - panel.frame.height
         ))
+        log.append("notch.layout", [
+            "screen": "\(Int(screen.frame.minX)),\(Int(screen.frame.minY)) \(Int(screen.frame.width))×\(Int(screen.frame.height))",
+            "panel": "\(Int(panel.frame.minX)),\(Int(panel.frame.minY)) \(Int(panel.frame.width))×\(Int(panel.frame.height))",
+            "panel_center_x": "\(Int(panel.frame.midX))",
+            "screen_center_x": "\(Int(screen.frame.midX))",
+            "notch_w": "\(Int(model.notchSize.width))",
+            "fitting_w": "\(Int(hosting?.fittingSize.width ?? -1))",
+            "screens": NSScreen.screens.map { "\(Int($0.frame.minX)):\(Int($0.frame.width))\($0.safeAreaInsets.top > 0 ? "*" : "")" }.joined(separator: " "),
+        ])
     }
 }
 
