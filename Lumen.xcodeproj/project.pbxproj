@@ -10,6 +10,7 @@
 		0DC62F05662D7B90FD628714 /* PointerOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5008652FC299845E0BC82123 /* PointerOverlay.swift */; };
 		11734D7722DDD01CB3B58183 /* OverlayPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4DF0975FE6476F287403E55 /* OverlayPanel.swift */; };
 		1587668F604E2A37E27990D2 /* PointParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1391E594655421C6F79C479C /* PointParser.swift */; };
+		2CE0652B7E3CF08DAD46928B /* XRayOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AAC9FFF6959532ABD27E442 /* XRayOverlay.swift */; };
 		2E19BECB8B34BDD46A26F0E3 /* AXReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0646C792DA6DFF558497050 /* AXReader.swift */; };
 		773FA1361E95D40DD6310993 /* LumenApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9BED7C9127526606A596340 /* LumenApp.swift */; };
 		7CCDCC6B55512A7B0FD6EB6A /* EventLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E6DC07551B9EDCE2F4D7CA /* EventLog.swift */; };
@@ -27,6 +28,7 @@
 /* Begin PBXFileReference section */
 		027B2856B9E68A028D97F9ED /* Reasoner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reasoner.swift; sourceTree = "<group>"; };
 		1391E594655421C6F79C479C /* PointParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointParser.swift; sourceTree = "<group>"; };
+		2AAC9FFF6959532ABD27E442 /* XRayOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XRayOverlay.swift; sourceTree = "<group>"; };
 		337A3269E47126DC851115EE /* Lumen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Lumen.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5008652FC299845E0BC82123 /* PointerOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointerOverlay.swift; sourceTree = "<group>"; };
 		58E6DC07551B9EDCE2F4D7CA /* EventLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventLog.swift; sourceTree = "<group>"; };
@@ -58,6 +60,7 @@
 			children = (
 				F4DF0975FE6476F287403E55 /* OverlayPanel.swift */,
 				5008652FC299845E0BC82123 /* PointerOverlay.swift */,
+				2AAC9FFF6959532ABD27E442 /* XRayOverlay.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -182,6 +185,7 @@
 				F983BC5FBEB94B06CAB69892 /* Reasoner.swift in Sources */,
 				C8CBAB7B72615D0675D19B07 /* ScreenCapturer.swift in Sources */,
 				ADCC7A9DD14801912930EAE1 /* Transcriber.swift in Sources */,
+				2CE0652B7E3CF08DAD46928B /* XRayOverlay.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

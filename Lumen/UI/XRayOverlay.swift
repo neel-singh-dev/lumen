@@ -1,0 +1,192 @@
+import AppKit
+import SwiftUI
+
+/// X-ray mode — the Glass Pipeline. A toggleable overlay where Lumen
+/// renders its own architecture running live: every stage of the current
+/// turn (listen → capture → perceive → reason → stream → narrate) with
+/// real timing badges, driven by actual pipeline events. The architecture
+/// diagram and the demo are the same artifact, and the timings are honest
+/// because they ARE the implementation.
+@MainActor
+final class XRayModel: ObservableObject {
+    enum Status {
+        case pending, active, done, failed
+    }
+
+    struct Stage: Identifiable {
+        let id: String
+        let title: String
+        let subsystem: String
+        var detail: String = ""
+        var status: Status = .pending
+        var ms: Int?
+    }
+
+    @Published var stages: [Stage] = []
+    @Published var headline = ""
+
+    func reset(provider: String) {
+        headline = provider
+        stages = [
+            Stage(id: "listen", title: "Listen", subsystem: "Apple Speech · on-device"),
+            Stage(id: "capture", title: "Capture", subsystem: "ScreenCaptureKit"),
+            Stage(id: "perceive", title: "Perceive", subsystem: "AXUIElement tree"),
+            Stage(id: "reason", title: "Reason", subsystem: provider),
+            Stage(id: "stream", title: "Stream", subsystem: "SSE → caption + tags"),
+            Stage(id: "narrate", title: "Narrate", subsystem: "AVSpeechSynthesizer · on-device"),
+        ]
+    }
+
+    func update(_ id: String, status: Status, detail: String? = nil, ms: Int? = nil) {
+        guard let index = stages.firstIndex(where: { $0.id == id }) else { return }
+        stages[index].status = status
+        if let detail { stages[index].detail = detail }
+        if let ms { stages[index].ms = ms }
+    }
+}
+
+@MainActor
+final class XRayOverlayController {
+    static let enabledKey = "xray.enabled"
+
+    static var isEnabled: Bool {
+        UserDefaults.standard.bool(forKey: enabledKey)
+    }
+
+    let model = XRayModel()
+    private var panel: NSPanel?
+
+    func showIfEnabled() {
+        guard Self.isEnabled, let screen = NSScreen.main else {
+            hide()
+            return
+        }
+        if panel == nil {
+            panel = makePanel(on: screen)
+        }
+        panel?.orderFrontRegardless()
+    }
+
+    func hide() {
+        panel?.orderOut(nil)
+    }
+
+    private func makePanel(on screen: NSScreen) -> NSPanel {
+        let size = NSSize(width: 280, height: 360)
+        let panel = NSPanel(
+            contentRect: NSRect(origin: .zero, size: size),
+            styleMask: [.nonactivatingPanel, .borderless],
+            backing: .buffered,
+            defer: false
+        )
+        panel.level = .screenSaver
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.becomesKeyOnlyIfNeeded = true
+        panel.hidesOnDeactivate = false
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = true
+        panel.isMovableByWindowBackground = true
+        panel.contentView = NSHostingView(rootView: XRayView(model: model))
+
+        let frame = screen.visibleFrame
+        panel.setFrameOrigin(NSPoint(
+            x: frame.maxX - size.width - 16,
+            y: frame.maxY - size.height - 16
+        ))
+        return panel
+    }
+}
+
+struct XRayView: View {
+    @ObservedObject var model: XRayModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: "waveform.path.ecg.rectangle")
+                    .foregroundStyle(.teal)
+                Text("X-Ray — live pipeline")
+                    .font(.caption.weight(.semibold))
+                Spacer()
+            }
+            Text(model.headline)
+                .font(.caption2.monospaced())
+                .foregroundStyle(.secondary)
+
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(model.stages.enumerated()), id: \.element.id) { index, stage in
+                    StageRow(stage: stage, isLast: index == model.stages.count - 1)
+                }
+            }
+        }
+        .padding(16)
+        .frame(width: 280, alignment: .topLeading)
+        .background(background)
+    }
+
+    @ViewBuilder
+    private var background: some View {
+        if #available(macOS 26.0, *) {
+            RoundedRectangle(cornerRadius: 18)
+                .fill(.clear)
+                .glassEffect(in: .rect(cornerRadius: 18))
+        } else {
+            RoundedRectangle(cornerRadius: 18)
+                .fill(.ultraThinMaterial)
+        }
+    }
+}
+
+private struct StageRow: View {
+    let stage: XRayModel.Stage
+    let isLast: Bool
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            VStack(spacing: 0) {
+                statusIcon
+                    .frame(width: 16, height: 16)
+                if !isLast {
+                    Rectangle()
+                        .fill(.secondary.opacity(0.25))
+                        .frame(width: 1.5, height: 26)
+                }
+            }
+            VStack(alignment: .leading, spacing: 1) {
+                HStack {
+                    Text(stage.title)
+                        .font(.callout.weight(stage.status == .active ? .semibold : .regular))
+                        .foregroundStyle(stage.status == .pending ? .secondary : .primary)
+                    Spacer()
+                    if let ms = stage.ms {
+                        Text("\(ms) ms")
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.teal)
+                    }
+                }
+                Text(stage.detail.isEmpty ? stage.subsystem : stage.detail)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    @ViewBuilder
+    private var statusIcon: some View {
+        switch stage.status {
+        case .pending:
+            Circle().strokeBorder(.secondary.opacity(0.4), lineWidth: 1.5)
+        case .active:
+            ProgressView().controlSize(.mini)
+        case .done:
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.teal)
+        case .failed:
+            Image(systemName: "xmark.circle.fill")
+                .foregroundStyle(.orange)
+        }
+    }
+}

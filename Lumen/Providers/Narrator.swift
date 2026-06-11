@@ -21,6 +21,10 @@ final class Narrator: NSObject, AVSpeechSynthesizerDelegate {
     /// Fired the instant a segment's audio begins.
     var onSegmentStart: ((PointParser.Segment) -> Void)?
 
+    /// Fired when the queue drains and the last utterance finishes —
+    /// the cue that overlays may begin their hide countdown.
+    var onIdle: (() -> Void)?
+
     override init() {
         super.init()
         synthesizer.delegate = self
@@ -48,7 +52,7 @@ final class Narrator: NSObject, AVSpeechSynthesizerDelegate {
             Task {
                 try? await Task.sleep(nanoseconds: 900_000_000)
                 self.speaking = false
-                self.speakNextIfIdle()
+                if self.pending.isEmpty { self.onIdle?() } else { self.speakNextIfIdle() }
             }
             return
         }
@@ -61,14 +65,14 @@ final class Narrator: NSObject, AVSpeechSynthesizerDelegate {
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
         Task { @MainActor in
             self.speaking = false
-            self.speakNextIfIdle()
+            if self.pending.isEmpty { self.onIdle?() } else { self.speakNextIfIdle() }
         }
     }
 
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
         Task { @MainActor in
             self.speaking = false
-            self.speakNextIfIdle()
+            if self.pending.isEmpty { self.onIdle?() } else { self.speakNextIfIdle() }
         }
     }
 }

@@ -14,7 +14,13 @@ final class AssistantController {
     private let axReader = AXReader()
     private let transcriber = AppleSpeechTranscriber()
     private let narrator = Narrator()
+    private let xray = XRayOverlayController()
     private let log = EventLog()
+    private var turnStart = Date()
+
+    private func elapsedMs() -> Int {
+        Int(Date().timeIntervalSince(turnStart) * 1000)
+    }
 
     /// Perception context for the in-flight turn, so speech-synced
     /// annotation delivery can resolve element ids when its beat arrives.
@@ -45,8 +51,21 @@ final class AssistantController {
         AppleSpeechTranscriber.requestPermissions()
         narrator.onSegmentStart = { [weak self] segment in
             guard let self else { return }
+            // A new beat means narration is alive — no hiding mid-tour.
+            self.autoHideTask?.cancel()
             for annotation in segment.annotations {
                 self.apply(annotation, capture: self.currentCapture, snapshot: self.currentSnapshot)
+            }
+        }
+        narrator.onIdle = { [weak self] in
+            guard let self else { return }
+            self.xray.model.update("narrate", status: .done, ms: self.elapsedMs())
+            self.autoHideTask?.cancel()
+            self.autoHideTask = Task {
+                try? await Task.sleep(nanoseconds: 12_000_000_000)
+                guard !Task.isCancelled else { return }
+                self.panel.hide()
+                self.pointer.hide()
             }
         }
         hotkey.onPushToTalkChanged = { [weak self] isDown in
@@ -66,6 +85,16 @@ final class AssistantController {
         narrator.stop()
         panel.hide()
         pointer.hide()
+        xray.hide()
+    }
+
+    func xrayVisibilityChanged() {
+        if XRayOverlayController.isEnabled {
+            xray.model.reset(provider: ProviderSettings.displayName)
+            xray.showIfEnabled()
+        } else {
+            xray.hide()
+        }
     }
 
     func promptForAPIKey() {
@@ -128,6 +157,10 @@ final class AssistantController {
         autoHideTask?.cancel()
         narrator.stop()
         pointer.hide()
+        turnStart = Date()
+        xray.model.reset(provider: ProviderSettings.displayName)
+        xray.showIfEnabled()
+        xray.model.update("listen", status: .active)
         log.append("summon", transcriber.diagnostics())
 
         panel.show(state: .listening(partial: ""))
@@ -153,6 +186,8 @@ final class AssistantController {
         // snapshot are in flight while the user is still speaking. The AX
         // read targets the frontmost app — which is still the user's app,
         // because the overlay never activates.
+        xray.model.update("capture", status: .active)
+        xray.model.update("perceive", status: .active)
         captureTask = Task { [capturer] in
             try? await capturer.captureMainDisplay()
         }
@@ -180,15 +215,27 @@ final class AssistantController {
             return
         }
         log.append("transcript", ["text": question])
+        xray.model.update("listen", status: .done, detail: "“\(question.prefix(28))…”", ms: elapsedMs())
 
         let capture = await captureTask?.value
         let snapshot = await axTask?.value
         if let capture {
             log.append("capture", ["w": "\(capture.pixelWidth)", "h": "\(capture.pixelHeight)"])
+            xray.model.update("capture", status: .done,
+                              detail: "\(capture.pixelWidth)×\(capture.pixelHeight) · self-excluded",
+                              ms: elapsedMs())
+        } else {
+            xray.model.update("capture", status: .failed, detail: "no frame")
         }
         if let snapshot {
             log.append("ax", ["elements": "\(snapshot.elements.count)", "app": snapshot.appName])
+            xray.model.update("perceive", status: .done,
+                              detail: "\(snapshot.elements.count) elements · \(snapshot.appName)",
+                              ms: elapsedMs())
+        } else {
+            xray.model.update("perceive", status: .failed, detail: "no AX tree")
         }
+        xray.model.update("reason", status: .active)
 
         // The receipt discloses the FULL payload: pixels and element list.
         let elementCount = snapshot?.elements.count ?? 0
@@ -213,6 +260,12 @@ final class AssistantController {
                 elementsText: snapshot?.promptText,
                 history: history
             ) {
+                if buffer.isEmpty {
+                    // First token: reasoning latency ends, streaming begins.
+                    xray.model.update("reason", status: .done, detail: "first token", ms: elapsedMs())
+                    xray.model.update("stream", status: .active)
+                    if speechOn { xray.model.update("narrate", status: .active) }
+                }
                 buffer += delta
                 let (display, annotations) = PointParser.process(buffer)
                 panel.show(state: .answering(text: display, receipt: capture?.image, done: false))
@@ -262,6 +315,10 @@ final class AssistantController {
                 }
                 return
             }
+            xray.model.update("stream", status: .done,
+                              detail: "\(buffer.count) chars · \(fired) annotations",
+                              ms: elapsedMs())
+            if !speechOn { xray.model.update("narrate", status: .done, detail: "muted") }
             panel.show(state: .answering(text: display, receipt: capture?.image, done: true))
             history.append(Exchange(question: question, answer: buffer))
             if history.count > 6 { history.removeFirst() }
@@ -270,11 +327,15 @@ final class AssistantController {
                 "latency_ms": "\(Int(Date().timeIntervalSince(started) * 1000))",
             ])
 
-            autoHideTask = Task {
-                try? await Task.sleep(nanoseconds: 15_000_000_000)
-                guard !Task.isCancelled else { return }
-                panel.hide()
-                pointer.hide()
+            if !speechOn {
+                // With narration on, the hide countdown starts when the
+                // narrator goes idle — never while the voice is mid-tour.
+                autoHideTask = Task {
+                    try? await Task.sleep(nanoseconds: 15_000_000_000)
+                    guard !Task.isCancelled else { return }
+                    panel.hide()
+                    pointer.hide()
+                }
             }
         } catch is CancellationError {
             // New summon interrupted this answer — expected.

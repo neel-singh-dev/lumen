@@ -6,12 +6,17 @@ struct LumenApp: App {
 
     @AppStorage(ProviderSettings.kindKey) private var providerKind = ProviderKind.anthropic.rawValue
     @AppStorage(Narrator.enabledKey) private var speakAnswers = true
+    @AppStorage(XRayOverlayController.enabledKey) private var xrayMode = false
 
     var body: some Scene {
         MenuBarExtra("Lumen", systemImage: "rays") {
             Text("Hold ⌃⌥ and ask about your screen")
             Divider()
             Toggle("Speak answers", isOn: $speakAnswers)
+            Toggle("X-Ray mode (live pipeline)", isOn: $xrayMode)
+                .onChange(of: xrayMode) {
+                    appDelegate.assistant.xrayVisibilityChanged()
+                }
             Picker("Provider", selection: $providerKind) {
                 Text("Claude (Anthropic)").tag(ProviderKind.anthropic.rawValue)
                 Text("Local — Ollama / OpenAI-compatible").tag(ProviderKind.openaiCompatible.rawValue)
