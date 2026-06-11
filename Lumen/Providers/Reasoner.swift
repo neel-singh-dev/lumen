@@ -12,8 +12,10 @@ struct Exchange {
 /// covers Ollama on localhost for fully-local mode) and a recorded-fixture
 /// implementation for offline demos plug in beside it.
 protocol Reasoner {
-    /// Streams text deltas. `[POINT:x,y:label]` tags arrive inline.
-    func stream(question: String, capture: ScreenCapture?, history: [Exchange]) -> AsyncThrowingStream<String, Error>
+    /// Streams text deltas. Spatial tags ([POINT:E…], [BOX:E…],
+    /// [POINT:x,y:label]) arrive inline. `elementsText` is the AX-tree
+    /// element list when available — the grounding half of perception.
+    func stream(question: String, capture: ScreenCapture?, elementsText: String?, history: [Exchange]) -> AsyncThrowingStream<String, Error>
 }
 
 enum ReasonerError: LocalizedError {
@@ -41,11 +43,16 @@ enum LumenPrompt {
     Rules:
     - Be terse: 1-3 short sentences, no preamble. The answer appears as an \
     on-screen caption, not a chat.
-    - When your answer refers to a specific element visible in the screenshot, \
-    append a pointing tag immediately after the relevant sentence: \
-    [POINT:x,y:label] where x,y are pixel coordinates in the screenshot you \
-    received and label is 1-3 words. Point at the center of the element.
-    - Only point at things actually visible in the screenshot. At most 3 points.
+    - You may receive a list of UI elements with ids and their exact on-screen \
+    frames. When you refer to one of those elements, anchor your answer with a \
+    tag right after the relevant sentence: [POINT:E12] places a pointer on \
+    element E12; [BOX:E12] draws a highlight box around it. Use [BOX] when \
+    guiding the user to click or interact with something, [POINT] when merely \
+    referring to it. ALWAYS prefer element ids — they are exact.
+    - Only when no listed element fits (canvas content, images, video), fall \
+    back to [POINT:x,y:label] with pixel coordinates in the screenshot and a \
+    1-3 word label.
+    - Only annotate things actually visible. At most 3 annotations per answer.
     - If the question has nothing to do with the screen, just answer it.
     """
 }
@@ -53,7 +60,7 @@ enum LumenPrompt {
 final class AnthropicReasoner: Reasoner {
     static let defaultModel = "claude-opus-4-8"
 
-    func stream(question: String, capture: ScreenCapture?, history: [Exchange]) -> AsyncThrowingStream<String, Error> {
+    func stream(question: String, capture: ScreenCapture?, elementsText: String?, history: [Exchange]) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
                 do {
@@ -67,7 +74,7 @@ final class AnthropicReasoner: Reasoner {
                     request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
                     request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
                     request.httpBody = try JSONSerialization.data(withJSONObject: body(
-                        question: question, capture: capture, history: history
+                        question: question, capture: capture, elementsText: elementsText, history: history
                     ))
 
                     let (bytes, response) = try await URLSession.shared.bytes(for: request)
@@ -102,7 +109,7 @@ final class AnthropicReasoner: Reasoner {
         }
     }
 
-    private func body(question: String, capture: ScreenCapture?, history: [Exchange]) -> [String: Any] {
+    private func body(question: String, capture: ScreenCapture?, elementsText: String?, history: [Exchange]) -> [String: Any] {
         var messages: [[String: Any]] = []
         for exchange in history.suffix(6) {
             messages.append(["role": "user", "content": exchange.question])
@@ -120,7 +127,8 @@ final class AnthropicReasoner: Reasoner {
                 ],
             ])
         }
-        content.append(["type": "text", "text": question])
+        let text = elementsText.map { "\($0)\n\nQuestion: \(question)" } ?? question
+        content.append(["type": "text", "text": text])
         messages.append(["role": "user", "content": content])
 
         // No `thinking` param: omitted means no thinking on Opus 4.8 —

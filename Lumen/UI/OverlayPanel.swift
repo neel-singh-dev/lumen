@@ -11,6 +11,7 @@ enum AssistantState {
 @MainActor
 final class OverlayModel: ObservableObject {
     @Published var state: AssistantState = .listening(partial: "")
+    @Published var receiptNote = "Sent to the model — exactly this frame"
     var onDismiss: (() -> Void)?
 }
 
@@ -32,6 +33,11 @@ final class OverlayPanelController {
 
     func hide() {
         panel?.orderOut(nil)
+    }
+
+    /// Describes the full payload sent to the model (frame + AX elements).
+    func setNote(_ note: String) {
+        model.receiptNote = note
     }
 
     private func makePanel() -> NSPanel {
@@ -94,7 +100,7 @@ struct OverlayView: View {
                         RoundedRectangle(cornerRadius: 8)
                             .strokeBorder(.white.opacity(0.2), lineWidth: 1)
                     )
-                Text("Sent to the model — exactly this frame")
+                Text(model.receiptNote)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }

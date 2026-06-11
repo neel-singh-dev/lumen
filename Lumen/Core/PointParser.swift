@@ -1,47 +1,71 @@
 import Foundation
 
-/// Parses the model's spatial-pointing protocol out of a streaming buffer.
-/// The model appends `[POINT:x,y:label]` tags with coordinates in the
-/// screenshot's pixel space; we strip them from the visible caption and
-/// surface them as pointer events.
-struct PointTag: Equatable {
-    let x: Int
-    let y: Int
-    let label: String
+/// Spatial annotations the model can emit, in document order.
+enum Annotation: Equatable {
+    /// Pixel coordinates in the screenshot's space — the fallback when no
+    /// AX element fits (canvas apps, images, video).
+    case pixelPoint(x: Int, y: Int, label: String)
+    /// Pointer anchored to an AX element's real center.
+    case elementPoint(id: Int)
+    /// Highlight box drawn around an AX element's real bounds.
+    case elementBox(id: Int)
 }
 
+/// Parses the model's spatial protocol out of a streaming buffer:
+///   [POINT:E12]      — point at element E12 (preferred, AX-grounded)
+///   [BOX:E12]        — highlight box around element E12
+///   [POINT:x,y:label] — pixel fallback in screenshot space
+/// Tags are stripped from the visible caption; a partially-streamed tag
+/// (or <think> block) is held back so it never flashes on screen.
 enum PointParser {
-    private static let tagPattern = #/\[POINT:(\d+),(\d+):([^\]]*)\]/#
-
+    private static let pixelPattern = #/\[POINT:(\d+),(\d+):([^\]]*)\]/#
+    private static let elementPointPattern = #/\[POINT:E(\d+)\]/#
+    private static let elementBoxPattern = #/\[BOX:E(\d+)\]/#
     private static let thinkPattern = #/<think>[\s\S]*?<\/think>/#
 
-    /// Returns the user-visible caption (complete tags removed, a trailing
-    /// incomplete tag held back) and every complete point tag in order.
-    static func process(_ buffer: String) -> (display: String, points: [PointTag]) {
+    static func process(_ raw: String) -> (display: String, annotations: [Annotation]) {
         // Some local thinking models (Qwen3 family) emit inline
-        // <think>…</think> blocks even when thinking is switched off —
-        // never show them, and hold back an unclosed block mid-stream.
-        var buffer = buffer.replacing(thinkPattern, with: "")
+        // <think>…</think> blocks even when thinking is switched off.
+        var buffer = raw.replacing(thinkPattern, with: "")
         if let open = buffer.range(of: "<think>"),
            !buffer[open.upperBound...].contains("</think>") {
             buffer = String(buffer[..<open.lowerBound])
         }
 
-        var points: [PointTag] = []
-        for match in buffer.matches(of: tagPattern) {
+        // Collect all annotations with their positions, then sort into
+        // document order so streaming fire-once indexes stay stable.
+        var found: [(Range<String.Index>, Annotation)] = []
+        for match in buffer.matches(of: pixelPattern) {
             if let x = Int(match.1), let y = Int(match.2) {
-                points.append(PointTag(x: x, y: y, label: String(match.3)))
+                found.append((match.range, .pixelPoint(x: x, y: y, label: String(match.3))))
             }
         }
+        for match in buffer.matches(of: elementPointPattern) {
+            if let id = Int(match.1) {
+                found.append((match.range, .elementPoint(id: id)))
+            }
+        }
+        for match in buffer.matches(of: elementBoxPattern) {
+            if let id = Int(match.1) {
+                found.append((match.range, .elementBox(id: id)))
+            }
+        }
+        found.sort { $0.0.lowerBound < $1.0.lowerBound }
 
-        var display = buffer.replacing(tagPattern, with: "")
+        var display = buffer
+            .replacing(pixelPattern, with: "")
+            .replacing(elementPointPattern, with: "")
+            .replacing(elementBoxPattern, with: "")
 
-        // Hold back a partially-streamed tag so "[POIN" never flashes on screen.
+        // Hold back a partially-streamed tag so "[POIN" never flashes.
         if let bracket = display.lastIndex(of: "["),
            !display[bracket...].contains("]") {
             display = String(display[..<bracket])
         }
 
-        return (display.trimmingCharacters(in: .whitespacesAndNewlines), points)
+        return (
+            display.trimmingCharacters(in: .whitespacesAndNewlines),
+            found.map(\.1)
+        )
     }
 }

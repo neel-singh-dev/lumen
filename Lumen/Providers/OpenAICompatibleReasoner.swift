@@ -13,7 +13,7 @@ final class OpenAICompatibleReasoner: Reasoner {
         self.model = model
     }
 
-    func stream(question: String, capture: ScreenCapture?, history: [Exchange]) -> AsyncThrowingStream<String, Error> {
+    func stream(question: String, capture: ScreenCapture?, elementsText: String?, history: [Exchange]) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
                 do {
@@ -29,7 +29,7 @@ final class OpenAICompatibleReasoner: Reasoner {
                     request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
                     request.timeoutInterval = 120
                     request.httpBody = try JSONSerialization.data(withJSONObject: body(
-                        question: question, capture: capture, history: history
+                        question: question, capture: capture, elementsText: elementsText, history: history
                     ))
 
                     let (bytes, response) = try await URLSession.shared.bytes(for: request)
@@ -63,7 +63,7 @@ final class OpenAICompatibleReasoner: Reasoner {
         }
     }
 
-    private func body(question: String, capture: ScreenCapture?, history: [Exchange]) -> [String: Any] {
+    private func body(question: String, capture: ScreenCapture?, elementsText: String?, history: [Exchange]) -> [String: Any] {
         // "/no_think" is Qwen3's soft switch to disable thinking mode.
         // Without it, qwen3-vl spends the entire token budget on a hidden
         // `reasoning` field and `content` arrives empty. Ollama's OpenAI
@@ -87,7 +87,8 @@ final class OpenAICompatibleReasoner: Reasoner {
         // Qwen3's thinking switch follows the MOST RECENT instruction, so a
         // system-prompt /no_think loses force once history accumulates —
         // attach it to every user turn for consistency.
-        content.append(["type": "text", "text": question + " /no_think"])
+        let text = elementsText.map { "\($0)\n\nQuestion: \(question)" } ?? question
+        content.append(["type": "text", "text": text + " /no_think"])
         messages.append(["role": "user", "content": content])
 
         return [

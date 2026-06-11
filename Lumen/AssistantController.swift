@@ -11,6 +11,7 @@ final class AssistantController {
     private let panel = OverlayPanelController()
     private let pointer = PointerOverlayController()
     private let capturer = ScreenCapturer()
+    private let axReader = AXReader()
     private let transcriber = AppleSpeechTranscriber()
     private let log = EventLog()
 
@@ -30,6 +31,7 @@ final class AssistantController {
 
     private var history: [Exchange] = []
     private var captureTask: Task<ScreenCapture?, Never>?
+    private var axTask: Task<AXReader.Snapshot?, Never>?
     private var answerTask: Task<Void, Never>?
     private var autoHideTask: Task<Void, Never>?
 
@@ -133,10 +135,15 @@ final class AssistantController {
             return
         }
 
-        // Speculative pre-capture: the screenshot is in flight while the
-        // user is still speaking.
+        // Speculative perception: both the screenshot AND the AX-tree
+        // snapshot are in flight while the user is still speaking. The AX
+        // read targets the frontmost app — which is still the user's app,
+        // because the overlay never activates.
         captureTask = Task { [capturer] in
             try? await capturer.captureMainDisplay()
+        }
+        axTask = Task.detached { [axReader] in
+            axReader.snapshotFrontmostApp()
         }
     }
 
@@ -161,32 +168,46 @@ final class AssistantController {
         log.append("transcript", ["text": question])
 
         let capture = await captureTask?.value
+        let snapshot = await axTask?.value
         if let capture {
             log.append("capture", ["w": "\(capture.pixelWidth)", "h": "\(capture.pixelHeight)"])
         }
+        if let snapshot {
+            log.append("ax", ["elements": "\(snapshot.elements.count)", "app": snapshot.appName])
+        }
+
+        // The receipt discloses the FULL payload: pixels and element list.
+        let elementCount = snapshot?.elements.count ?? 0
+        panel.setNote(elementCount > 0
+            ? "Sent: this frame + \(elementCount) UI elements from \(snapshot?.appName ?? "")"
+            : "Sent to the model — exactly this frame")
         panel.show(state: .thinking(receipt: capture?.image))
 
         var buffer = ""
-        var firedPoints = 0
+        var fired = 0
         let started = Date()
 
         do {
-            for try await delta in reasoner.stream(question: question, capture: capture, history: history) {
+            for try await delta in reasoner.stream(
+                question: question,
+                capture: capture,
+                elementsText: snapshot?.promptText,
+                history: history
+            ) {
                 buffer += delta
-                let (display, points) = PointParser.process(buffer)
+                let (display, annotations) = PointParser.process(buffer)
                 panel.show(state: .answering(text: display, receipt: capture?.image, done: false))
 
-                if let capture, points.count > firedPoints {
-                    for tag in points[firedPoints...] {
-                        pointer.point(at: tag, captureSize: (capture.pixelWidth, capture.pixelHeight))
-                        log.append("point", ["x": "\(tag.x)", "y": "\(tag.y)", "label": tag.label])
+                if annotations.count > fired {
+                    for annotation in annotations[fired...] {
+                        apply(annotation, capture: capture, snapshot: snapshot)
                     }
-                    firedPoints = points.count
+                    fired = annotations.count
                 }
             }
 
             let (display, _) = PointParser.process(buffer)
-            guard !display.isEmpty || firedPoints > 0 else {
+            guard !display.isEmpty || fired > 0 else {
                 // A stream that completes with no visible output is a failure,
                 // not an answer — say so (e.g. a thinking model that burned
                 // its whole budget on hidden reasoning).
@@ -225,4 +246,42 @@ final class AssistantController {
             }
         }
     }
+
+    /// Renders one annotation. Element-anchored tags use the AX frame as-is
+    /// (already in screen points); pixel tags scale from screenshot space.
+    private func apply(_ annotation: Annotation, capture: ScreenCapture?, snapshot: AXReader.Snapshot?) {
+        switch annotation {
+        case .pixelPoint(let x, let y, let label):
+            guard let capture, capture.pixelWidth > 0, capture.pixelHeight > 0,
+                  let screen = NSScreen.main else { return }
+            let scaleX = screen.frame.width / CGFloat(capture.pixelWidth)
+            let scaleY = screen.frame.height / CGFloat(capture.pixelHeight)
+            pointer.point(
+                atScreenPoint: CGPoint(x: CGFloat(x) * scaleX, y: CGFloat(y) * scaleY),
+                label: label
+            )
+            log.append("annotate.pixel", ["x": "\(x)", "y": "\(y)", "label": label])
+        case .elementPoint(let id):
+            guard let element = snapshot?.element(withID: id) else {
+                log.append("annotate.miss", ["id": "E\(id)"])
+                return
+            }
+            pointer.point(
+                atScreenPoint: CGPoint(x: element.frame.midX, y: element.frame.midY),
+                label: element.label.isEmpty ? element.roleName : element.label
+            )
+            log.append("annotate.element_point", ["id": "E\(id)", "label": element.label])
+        case .elementBox(let id):
+            guard let element = snapshot?.element(withID: id) else {
+                log.append("annotate.miss", ["id": "E\(id)"])
+                return
+            }
+            pointer.highlight(
+                rect: element.frame,
+                label: element.label.isEmpty ? element.roleName : element.label
+            )
+            log.append("annotate.element_box", ["id": "E\(id)", "label": element.label])
+        }
+    }
+
 }

@@ -10,6 +10,7 @@
 		0DC62F05662D7B90FD628714 /* PointerOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5008652FC299845E0BC82123 /* PointerOverlay.swift */; };
 		11734D7722DDD01CB3B58183 /* OverlayPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4DF0975FE6476F287403E55 /* OverlayPanel.swift */; };
 		1587668F604E2A37E27990D2 /* PointParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1391E594655421C6F79C479C /* PointParser.swift */; };
+		2E19BECB8B34BDD46A26F0E3 /* AXReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0646C792DA6DFF558497050 /* AXReader.swift */; };
 		773FA1361E95D40DD6310993 /* LumenApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9BED7C9127526606A596340 /* LumenApp.swift */; };
 		7CCDCC6B55512A7B0FD6EB6A /* EventLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E6DC07551B9EDCE2F4D7CA /* EventLog.swift */; };
 		8CBEB53B14C1D46647F16808 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82CA2416103C806FC560933E /* KeychainStore.swift */; };
@@ -34,6 +35,7 @@
 		A13CDE23B9C1246F4A4D6F31 /* HotkeyMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyMonitor.swift; sourceTree = "<group>"; };
 		A9BED7C9127526606A596340 /* LumenApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LumenApp.swift; sourceTree = "<group>"; };
 		AA1ACBE10DE119731821C21A /* ScreenCapturer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCapturer.swift; sourceTree = "<group>"; };
+		B0646C792DA6DFF558497050 /* AXReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXReader.swift; sourceTree = "<group>"; };
 		B52B4AC2333DFBA0C08DB196 /* AssistantController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantController.swift; sourceTree = "<group>"; };
 		D3FCBEFA855437E1DC340AA9 /* ProviderSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderSettings.swift; sourceTree = "<group>"; };
 		F4DF0975FE6476F287403E55 /* OverlayPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayPanel.swift; sourceTree = "<group>"; };
@@ -69,6 +71,7 @@
 		7BC8FE333078EB966A9F5B8A /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				B0646C792DA6DFF558497050 /* AXReader.swift */,
 				58E6DC07551B9EDCE2F4D7CA /* EventLog.swift */,
 				A13CDE23B9C1246F4A4D6F31 /* HotkeyMonitor.swift */,
 				82CA2416103C806FC560933E /* KeychainStore.swift */,
@@ -161,6 +164,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2E19BECB8B34BDD46A26F0E3 /* AXReader.swift in Sources */,
 				B9DD406AF0A31BD3CAE427AF /* AssistantController.swift in Sources */,
 				7CCDCC6B55512A7B0FD6EB6A /* EventLog.swift in Sources */,
 				B85FA0CB2B8164AFFBB928BC /* HotkeyMonitor.swift in Sources */,
