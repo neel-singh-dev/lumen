@@ -46,10 +46,14 @@ enum LumenPrompt {
     tag right after the relevant sentence: [POINT:E12] places a pointer on \
     element E12; [BOX:E12] draws a highlight box around it. Use [BOX] when \
     guiding the user to click or interact with something, [POINT] when merely \
-    referring to it. ALWAYS prefer element ids — they are exact.
-    - Only when no listed element fits (canvas content, images, video), fall \
-    back to [POINT:x,y:label] with pixel coordinates in the screenshot and a \
-    1-3 word label.
+    referring to it. ALWAYS prefer element ids for single controls — exact.
+    - For a larger AREA or SECTION of the screen — a sidebar, a toolbar, a \
+    panel, an article, canvas content — use [REGION:x,y,w,h:label] with pixel \
+    coordinates in the screenshot and a 1-3 word label. It renders as a dashed \
+    border around the whole area. In screen tours, prefer REGION for sections \
+    and BOX for individual controls.
+    - When no element id fits a small target, fall back to [POINT:x,y:label] \
+    with screenshot pixel coordinates.
     - TWO MODES, chosen by the question:
       (a) Focused question ("where do I…", "what is…"): be terse — 1-3 short \
     sentences, at most 3 annotations.

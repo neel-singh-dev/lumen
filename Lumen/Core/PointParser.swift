@@ -9,6 +9,9 @@ enum Annotation: Equatable {
     case elementPoint(id: Int)
     /// Highlight box drawn around an AX element's real bounds.
     case elementBox(id: Int)
+    /// Dashed-border highlight around an arbitrary AREA of the screen
+    /// (a sidebar, a panel, canvas content) — screenshot pixel space.
+    case region(x: Int, y: Int, w: Int, h: Int, label: String)
     /// Agent action: open a URL in the default browser.
     case openURL(String)
     /// Agent action: launch an application by name.
@@ -25,6 +28,7 @@ enum PointParser {
     private static let pixelPattern = #/\[POINT:(\d+),(\d+):([^\]]*)\]/#
     private static let elementPointPattern = #/\[POINT:E(\d+)\]/#
     private static let elementBoxPattern = #/\[BOX:E(\d+)\]/#
+    private static let regionPattern = #/\[REGION:(\d+),(\d+),(\d+),(\d+):([^\]]*)\]/#
     private static let openPattern = #/\[OPEN:([^\]]+)\]/#
     private static let launchPattern = #/\[LAUNCH:([^\]]+)\]/#
     private static let thinkPattern = #/<think>[\s\S]*?<\/think>/#
@@ -37,6 +41,7 @@ enum PointParser {
             .replacing(pixelPattern, with: "")
             .replacing(elementPointPattern, with: "")
             .replacing(elementBoxPattern, with: "")
+            .replacing(regionPattern, with: "")
             .replacing(openPattern, with: "")
             .replacing(launchPattern, with: "")
 
@@ -79,6 +84,11 @@ enum PointParser {
         for match in buffer.matches(of: elementBoxPattern) {
             if let id = Int(match.1) {
                 found.append((match.range, .elementBox(id: id)))
+            }
+        }
+        for match in buffer.matches(of: regionPattern) {
+            if let x = Int(match.1), let y = Int(match.2), let w = Int(match.3), let h = Int(match.4) {
+                found.append((match.range, .region(x: x, y: y, w: w, h: h, label: String(match.5))))
             }
         }
         for match in buffer.matches(of: openPattern) {

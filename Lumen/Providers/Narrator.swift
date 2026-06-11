@@ -18,6 +18,15 @@ final class Narrator: NSObject, AVSpeechSynthesizerDelegate {
     private var pending: [(PointParser.Segment, (() -> Void)?)] = []
     private var speaking = false
 
+    /// The best English voice installed — premium > enhanced > default.
+    /// Voice quality is half the polished feel; still fully on-device.
+    private static let voice: AVSpeechSynthesisVoice? = {
+        let english = AVSpeechSynthesisVoice.speechVoices()
+            .filter { $0.language.hasPrefix("en") }
+        return english.first { $0.quality == .premium }
+            ?? english.first { $0.quality == .enhanced }
+    }()
+
     /// Fired the instant a segment's audio begins.
     var onSegmentStart: ((PointParser.Segment) -> Void)?
 
@@ -67,6 +76,9 @@ final class Narrator: NSObject, AVSpeechSynthesizerDelegate {
 
         let utterance = AVSpeechUtterance(string: segment.text)
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate
+        if let voice = Self.voice {
+            utterance.voice = voice
+        }
         synthesizer.speak(utterance)
     }
 

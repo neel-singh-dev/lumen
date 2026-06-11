@@ -270,6 +270,10 @@ final class AssistantController {
         xray.model.update("listen", status: .active)
         log.append("summon", transcriber.diagnostics())
 
+        // Tactile + audible confirmation the instant the summon lands.
+        NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
+        NSSound(named: "Pop")?.play()
+
         // Listening lives in the notch — the pill appears at the cursor
         // once there's something to show (receipt, then the answer).
         notch.set(.listening(""))
@@ -520,6 +524,22 @@ final class AssistantController {
                 label: element.label.isEmpty ? element.roleName : element.label
             )
             log.append("annotate.element_box", ["id": "E\(id)", "label": element.label])
+        case .region(let x, let y, let w, let h, let label):
+            // Section highlight — pixel space, scaled to screen points.
+            guard let capture, capture.pixelWidth > 0, capture.pixelHeight > 0,
+                  let screen = NSScreen.main else { return }
+            let scaleX = screen.frame.width / CGFloat(capture.pixelWidth)
+            let scaleY = screen.frame.height / CGFloat(capture.pixelHeight)
+            pointer.enqueueRegion(
+                rect: CGRect(
+                    x: CGFloat(x) * scaleX,
+                    y: CGFloat(y) * scaleY,
+                    width: CGFloat(w) * scaleX,
+                    height: CGFloat(h) * scaleY
+                ),
+                label: label
+            )
+            log.append("annotate.region", ["label": label, "w": "\(w)", "h": "\(h)"])
         case .openURL(let raw):
             // Real agent action: open a page. Border = "I'm acting now."
             let normalized = raw.hasPrefix("http") ? raw : "https://\(raw)"

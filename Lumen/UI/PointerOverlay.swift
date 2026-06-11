@@ -12,7 +12,7 @@ import SwiftUI
 @MainActor
 final class PointerOverlayController {
     struct TourStop {
-        enum Kind { case point, box }
+        enum Kind { case point, box, region }
         let kind: Kind
         let rect: CGRect      // screen points, top-left origin
         let label: String
@@ -33,6 +33,12 @@ final class PointerOverlayController {
 
     func enqueueHighlight(rect: CGRect, label: String) {
         enqueue(TourStop(kind: .box, rect: rect, label: label))
+    }
+
+    /// Dashed-border highlight for an arbitrary screen area (a section,
+    /// a panel, canvas content) — Clicky's signature region treatment.
+    func enqueueRegion(rect: CGRect, label: String) {
+        enqueue(TourStop(kind: .region, rect: rect, label: label))
     }
 
     func hide() {
@@ -109,14 +115,17 @@ final class PointerOverlayController {
 @MainActor
 final class PointerModel: ObservableObject {
     struct Box: Identifiable, Equatable {
+        enum Style { case element, region }
         let id = UUID()
         let rect: CGRect
         let label: String
+        let style: Style
     }
 
     @Published var currentBox: Box?
     @Published var passedBoxes: [Box] = []
-    @Published var pointerTarget: CGPoint = .zero
+    @Published var pointerX: CGFloat = 0
+    @Published var pointerY: CGFloat = 0
     @Published var pointerLabel: String = ""
     @Published var pointerVisible = false
     /// Agent-mode "I have the cursor" border around the whole screen.
@@ -146,24 +155,35 @@ final class PointerModel: ObservableObject {
                 if passedBoxes.count > 8 { passedBoxes.removeFirst(passedBoxes.count - 8) }
                 currentBox = nil
             }
-            if stop.kind == .box {
-                currentBox = Box(rect: stop.rect, label: stop.label)
+            switch stop.kind {
+            case .box:
+                currentBox = Box(rect: stop.rect, label: stop.label, style: .element)
+            case .region:
+                currentBox = Box(rect: stop.rect, label: stop.label, style: .region)
+            case .point:
+                break
             }
         }
 
-        let target = stop.kind == .box
-            ? CGPoint(x: stop.rect.midX, y: stop.rect.midY)
-            : stop.rect.origin
+        let target = stop.kind == .point
+            ? stop.rect.origin
+            : CGPoint(x: stop.rect.midX, y: stop.rect.midY)
 
         // First appearance enters from below the target so the motion has a
         // direction; subsequent stops glide from the previous location.
         if !pointerVisible {
-            pointerTarget = CGPoint(x: target.x, y: target.y + 120)
+            pointerX = target.x
+            pointerY = target.y + 130
         }
         pointerLabel = stop.kind == .point ? stop.label : ""
         pointerVisible = true
-        animate(.spring(response: 0.55, dampingFraction: 0.75)) {
-            pointerTarget = target
+        // Different spring timing per axis bends the path into an arc —
+        // the swooping travel that makes the pointer feel alive.
+        animate(.spring(response: 0.62, dampingFraction: 0.82)) {
+            pointerX = target.x
+        }
+        animate(.spring(response: 0.38, dampingFraction: 0.72)) {
+            pointerY = target.y
         }
     }
 
@@ -182,6 +202,10 @@ struct AnnotationView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
+            if let current = model.currentBox {
+                // Spotlight: everything except the subject dims slightly.
+                SpotlightDim(cutout: current.rect.insetBy(dx: -8, dy: -8))
+            }
             if model.controlBorderActive {
                 // "I have the cursor" — unambiguous, screen-wide.
                 RoundedRectangle(cornerRadius: 16)
@@ -202,6 +226,7 @@ struct AnnotationView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .animation(.easeOut(duration: 0.25), value: model.pointerVisible)
+        .animation(.easeOut(duration: 0.3), value: model.currentBox)
     }
 
     private var pointer: some View {
@@ -220,20 +245,39 @@ struct AnnotationView: View {
             }
         }
         // Offset so the triangle's tip lands on the target point.
-        .position(x: model.pointerTarget.x, y: model.pointerTarget.y + 22)
+        .position(x: model.pointerX, y: model.pointerY + 22)
         .transition(.opacity.combined(with: .scale(scale: 0.6)))
+    }
+}
+
+/// Dims the whole screen except the highlighted subject — gentle theater
+/// lighting that directs attention without hiding context.
+private struct SpotlightDim: View {
+    let cutout: CGRect
+
+    var body: some View {
+        Canvas { context, size in
+            var path = Path(CGRect(origin: .zero, size: size))
+            path.addRoundedRect(in: cutout, cornerSize: CGSize(width: 12, height: 12))
+            context.fill(path, with: .color(.black.opacity(0.16)), style: FillStyle(eoFill: true))
+        }
+        .allowsHitTesting(false)
+        .transition(.opacity)
     }
 }
 
 private struct HighlightBox: View {
     let box: PointerModel.Box
     let isCurrent: Bool
+    @State private var dashPhase: CGFloat = 0
+
+    private var accent: Color {
+        box.style == .region ? .yellow : .teal
+    }
 
     var body: some View {
         let rect = box.rect.insetBy(dx: -5, dy: -5)
-        RoundedRectangle(cornerRadius: 8)
-            .strokeBorder(.teal.opacity(isCurrent ? 1 : 0.25), lineWidth: isCurrent ? 2.5 : 1.5)
-            .shadow(color: .teal.opacity(isCurrent ? 0.55 : 0), radius: 8)
+        shape(for: rect)
             .frame(width: rect.width, height: rect.height)
             .overlay(alignment: .topLeading) {
                 // Label only on the current stop — passed boxes stay quiet.
@@ -246,13 +290,37 @@ private struct HighlightBox: View {
                         .fixedSize()
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
-                        .background(.teal, in: Capsule())
+                        .background(accent, in: Capsule())
                         .foregroundStyle(.black)
                         .offset(y: rect.minY < 44 ? rect.height + 6 : -26)
                 }
             }
             .position(x: rect.midX, y: rect.midY)
             .transition(.opacity.combined(with: .scale(scale: 0.9)))
+    }
+
+    @ViewBuilder
+    private func shape(for rect: CGRect) -> some View {
+        if box.style == .region {
+            // Dashed marching-ants border — the section treatment.
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(
+                    accent.opacity(isCurrent ? 0.95 : 0.25),
+                    style: StrokeStyle(lineWidth: isCurrent ? 2.5 : 1.5, dash: [9, 6], dashPhase: dashPhase)
+                )
+                .shadow(color: accent.opacity(isCurrent ? 0.45 : 0), radius: 7)
+                .onAppear {
+                    guard isCurrent,
+                          !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
+                    withAnimation(.linear(duration: 0.5).repeatForever(autoreverses: false)) {
+                        dashPhase = -15
+                    }
+                }
+        } else {
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(accent.opacity(isCurrent ? 1 : 0.25), lineWidth: isCurrent ? 2.5 : 1.5)
+                .shadow(color: accent.opacity(isCurrent ? 0.55 : 0), radius: 8)
+        }
     }
 }
 
