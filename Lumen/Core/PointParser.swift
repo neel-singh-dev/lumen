@@ -13,9 +13,20 @@ struct PointTag: Equatable {
 enum PointParser {
     private static let tagPattern = #/\[POINT:(\d+),(\d+):([^\]]*)\]/#
 
+    private static let thinkPattern = #/<think>[\s\S]*?<\/think>/#
+
     /// Returns the user-visible caption (complete tags removed, a trailing
     /// incomplete tag held back) and every complete point tag in order.
     static func process(_ buffer: String) -> (display: String, points: [PointTag]) {
+        // Some local thinking models (Qwen3 family) emit inline
+        // <think>…</think> blocks even when thinking is switched off —
+        // never show them, and hold back an unclosed block mid-stream.
+        var buffer = buffer.replacing(thinkPattern, with: "")
+        if let open = buffer.range(of: "<think>"),
+           !buffer[open.upperBound...].contains("</think>") {
+            buffer = String(buffer[..<open.lowerBound])
+        }
+
         var points: [PointTag] = []
         for match in buffer.matches(of: tagPattern) {
             if let x = Int(match.1), let y = Int(match.2) {

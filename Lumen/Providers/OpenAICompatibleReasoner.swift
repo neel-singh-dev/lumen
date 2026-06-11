@@ -84,13 +84,18 @@ final class OpenAICompatibleReasoner: Reasoner {
                 "image_url": ["url": "data:image/jpeg;base64,\(capture.jpegBase64)"],
             ])
         }
-        content.append(["type": "text", "text": question])
+        // Qwen3's thinking switch follows the MOST RECENT instruction, so a
+        // system-prompt /no_think loses force once history accumulates —
+        // attach it to every user turn for consistency.
+        content.append(["type": "text", "text": question + " /no_think"])
         messages.append(["role": "user", "content": content])
 
         return [
             "model": model,
             "stream": true,
-            "max_tokens": 1024,
+            // Generous budget so that even if a thinking model reasons
+            // anyway, visible content still arrives before the cap.
+            "max_tokens": 4096,
             "messages": messages,
         ]
     }
