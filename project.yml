@@ -28,3 +28,6 @@ targets:
         CURRENT_PROJECT_VERSION: 1
         SWIFT_VERSION: 5.0
         GENERATE_INFOPLIST_FILE: NO
+        # Stable signing identity so TCC permission grants survive rebuilds.
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: C4YDYMFG88
