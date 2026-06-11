@@ -64,8 +64,13 @@ final class OpenAICompatibleReasoner: Reasoner {
     }
 
     private func body(question: String, capture: ScreenCapture?, history: [Exchange]) -> [String: Any] {
+        // "/no_think" is Qwen3's soft switch to disable thinking mode.
+        // Without it, qwen3-vl spends the entire token budget on a hidden
+        // `reasoning` field and `content` arrives empty. Ollama's OpenAI
+        // endpoint ignores the `think:false` parameter, so the prompt-level
+        // switch is the reliable path; other models treat it as a no-op.
         var messages: [[String: Any]] = [
-            ["role": "system", "content": LumenPrompt.system]
+            ["role": "system", "content": "/no_think " + LumenPrompt.system]
         ]
         for exchange in history.suffix(6) {
             messages.append(["role": "user", "content": exchange.question])

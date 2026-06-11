@@ -186,6 +186,19 @@ final class AssistantController {
             }
 
             let (display, _) = PointParser.process(buffer)
+            guard !display.isEmpty || firedPoints > 0 else {
+                // A stream that completes with no visible output is a failure,
+                // not an answer — say so (e.g. a thinking model that burned
+                // its whole budget on hidden reasoning).
+                log.append("answer.empty", ["latency_ms": "\(Int(Date().timeIntervalSince(started) * 1000))"])
+                panel.show(state: .error("The model finished without producing an answer. If you're using a local thinking model, it may have spent its whole token budget reasoning."))
+                autoHideTask = Task {
+                    try? await Task.sleep(nanoseconds: 8_000_000_000)
+                    guard !Task.isCancelled else { return }
+                    panel.hide()
+                }
+                return
+            }
             panel.show(state: .answering(text: display, receipt: capture?.image, done: true))
             history.append(Exchange(question: question, answer: buffer))
             if history.count > 6 { history.removeFirst() }
