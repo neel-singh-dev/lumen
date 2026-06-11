@@ -38,6 +38,7 @@ auditability, grounding architecture, and bring-your-own-model.
 | Nothing evaporates | **History** persists every exchange from the same append-only log |
 | Fully-local mode exists | Point the BYOK provider at Ollama on localhost — screen, voice, and reasoning all stay home |
 | The product teaches itself | A directed **3-chapter tour**, advanced by your own summons, with no setup required |
+| The agent acts only on explicit ask — and says so first | **Agent verbs** ride the annotation protocol: `[OPEN:]`/`[LAUNCH:]`, plus `[REMIND:]` (Reminders via EventKit) and `[NOTE:]` (Apple Notes) — spoken before they run, logged after |
 
 ## Architecture in one paragraph
 
@@ -108,6 +109,8 @@ Switching providers takes effect on the next summon — including mid-demo.
 - Hover the notch → **X-Ray mode**, then ask again — watch the pipeline run live, EST. PAYLOAD and all
 - Hover the notch → **Replay** — the last exchange re-performs from the log, no model
 - Hover the notch → **Agent preview** — the trust protocol, choreographed
+- *"Save a reminder to review this page tomorrow"* — lands in Reminders, narrated first
+- *"Save the key points on screen as a note"* — lands in Apple Notes
 - Type a password field on screen, then summon — watch the receipt redact it
 
 ## Status & roadmap

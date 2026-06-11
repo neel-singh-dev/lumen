@@ -27,8 +27,12 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Lumen creates notes in Apple Notes only when you explicitly ask it to.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Lumen uses the microphone for push-to-talk voice questions.</string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>Lumen saves reminders only when you explicitly ask it to.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Lumen transcribes your voice on-device with Apple speech recognition. Audio never leaves this Mac.</string>
 </dict>

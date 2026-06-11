@@ -16,12 +16,16 @@ enum Annotation: Equatable {
     case openURL(String)
     /// Agent action: launch an application by name.
     case launchApp(String)
+    /// Agent action: save a Reminder (EventKit).
+    case reminder(String)
+    /// Agent action: save a note in Apple Notes.
+    case note(title: String, body: String)
 
     /// True for annotations that draw something on screen (and therefore
     /// log a resolved rect); agent actions don't.
     var isVisual: Bool {
         switch self {
-        case .openURL, .launchApp: return false
+        case .openURL, .launchApp, .reminder, .note: return false
         default: return true
         }
     }
@@ -40,6 +44,8 @@ enum PointParser {
     private static let regionPattern = #/\[REGION:(\d+),(\d+),(\d+),(\d+):([^\]]*)\]/#
     private static let openPattern = #/\[OPEN:([^\]]+)\]/#
     private static let launchPattern = #/\[LAUNCH:([^\]]+)\]/#
+    private static let remindPattern = #/\[REMIND:([^\]]+)\]/#
+    private static let notePattern = #/\[NOTE:([^:\]]+):([^\]]*)\]/#
     private static let thinkPattern = #/<think>[\s\S]*?<\/think>/#
 
     static func process(_ raw: String) -> (display: String, annotations: [Annotation]) {
@@ -53,6 +59,8 @@ enum PointParser {
             .replacing(regionPattern, with: "")
             .replacing(openPattern, with: "")
             .replacing(launchPattern, with: "")
+            .replacing(remindPattern, with: "")
+            .replacing(notePattern, with: "")
 
         // Hold back a partially-streamed tag so "[POIN" never flashes.
         if let bracket = display.lastIndex(of: "["),
@@ -105,6 +113,15 @@ enum PointParser {
         }
         for match in buffer.matches(of: launchPattern) {
             found.append((match.range, .launchApp(String(match.1).trimmingCharacters(in: .whitespaces))))
+        }
+        for match in buffer.matches(of: remindPattern) {
+            found.append((match.range, .reminder(String(match.1).trimmingCharacters(in: .whitespaces))))
+        }
+        for match in buffer.matches(of: notePattern) {
+            found.append((match.range, .note(
+                title: String(match.1).trimmingCharacters(in: .whitespaces),
+                body: String(match.2).trimmingCharacters(in: .whitespaces)
+            )))
         }
         found.sort { $0.0.lowerBound < $1.0.lowerBound }
         return found

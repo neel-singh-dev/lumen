@@ -839,6 +839,24 @@ final class AssistantController {
                 try? await Task.sleep(nanoseconds: 2_000_000_000)
                 self.pointer.setControlBorder(false)
             }
+        case .reminder(let text):
+            pointer.setControlBorder(true)
+            Task {
+                let saved = await SystemActions.saveReminder(text)
+                self.log.append(saved ? "agent.reminder" : "agent.reminder_fail",
+                                ["text": String(text.prefix(80))])
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                self.pointer.setControlBorder(false)
+            }
+        case .note(let title, let body):
+            pointer.setControlBorder(true)
+            let saved = SystemActions.saveNote(title: title, body: body)
+            log.append(saved ? "agent.note" : "agent.note_fail",
+                       ["title": String(title.prefix(80))])
+            Task {
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                self.pointer.setControlBorder(false)
+            }
         }
     }
 
