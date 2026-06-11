@@ -33,6 +33,9 @@ struct LumenApp: App {
                 appDelegate.assistant.promptForLocalProvider()
             }
             Divider()
+            Button("Replay Last Answer") {
+                appDelegate.assistant.runReplay()
+            }
             Button("Replay Welcome Tour") {
                 appDelegate.assistant.runWelcomeTour()
             }
