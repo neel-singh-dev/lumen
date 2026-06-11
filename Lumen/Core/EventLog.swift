@@ -10,15 +10,22 @@ struct LogEvent: Codable {
 }
 
 final class EventLog {
+    /// The app's Application Support directory — the shared anchor for every
+    /// durable artifact (events, conversations).
+    static let supportDirectory: URL = {
+        let dir = FileManager.default
+            .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Lumen", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }()
+
     private let fileURL: URL
     private let encoder: JSONEncoder
     private let queue = DispatchQueue(label: "in.neelmani.lumen.eventlog")
 
     init() {
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let dir = support.appendingPathComponent("Lumen", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        fileURL = dir.appendingPathComponent("events.jsonl")
+        fileURL = Self.supportDirectory.appendingPathComponent("events.jsonl")
 
         encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601

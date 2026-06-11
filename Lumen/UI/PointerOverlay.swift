@@ -12,7 +12,7 @@ import SwiftUI
 @MainActor
 final class PointerOverlayController {
     struct TourStop {
-        enum Kind { case point, box, region }
+        enum Kind: String { case point, box, region }
         let kind: Kind
         let rect: CGRect      // screen points, top-left origin
         let label: String
@@ -201,7 +201,7 @@ final class PointerModel: ObservableObject {
     }
 
     func clear() {
-        animate(.easeOut(duration: 0.25)) {
+        animate(DT.fade) {
             pointerVisible = false
             currentBox = nil
             passedBoxes = []

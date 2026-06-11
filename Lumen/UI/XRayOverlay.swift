@@ -33,10 +33,7 @@ final class XRayModel: ObservableObject {
         headline = provider
         receipt = nil
         costLine = ""
-        switch ProviderRouting.resolve(
-            kindRaw: ProviderSettings.kind.rawValue,
-            hasAnthropicKey: KeychainStore.load(account: "anthropic") != nil
-        ) {
+        switch ProviderSettings.effective {
         case .anthropic:
             destination = "api.anthropic.com · TLS"
         case .openAICompatible:
@@ -219,11 +216,11 @@ struct XRayView: View {
     @ViewBuilder
     private var background: some View {
         if #available(macOS 26.0, *) {
-            RoundedRectangle(cornerRadius: 18)
+            RoundedRectangle(cornerRadius: DT.radiusPanel)
                 .fill(.clear)
-                .glassEffect(in: .rect(cornerRadius: 18))
+                .glassEffect(in: .rect(cornerRadius: DT.radiusPanel))
         } else {
-            RoundedRectangle(cornerRadius: 18)
+            RoundedRectangle(cornerRadius: DT.radiusPanel)
                 .fill(.ultraThinMaterial)
         }
     }
@@ -271,7 +268,6 @@ private struct StageRow: View {
                     if let ms = stage.ms {
                         Text("\(ms) ms")
                             .font(.caption2.monospaced())
-                            .monospacedDigit()
                             .foregroundStyle(.teal)
                     }
                 }

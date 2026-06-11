@@ -20,10 +20,7 @@ final class ConversationStore {
     private let queue = DispatchQueue(label: "in.neelmani.lumen.conversations")
 
     init() {
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let dir = support.appendingPathComponent("Lumen", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        fileURL = dir.appendingPathComponent("conversations.jsonl")
+        fileURL = EventLog.supportDirectory.appendingPathComponent("conversations.jsonl")
 
         encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601

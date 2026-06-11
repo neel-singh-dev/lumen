@@ -16,6 +16,15 @@ enum Annotation: Equatable {
     case openURL(String)
     /// Agent action: launch an application by name.
     case launchApp(String)
+
+    /// True for annotations that draw something on screen (and therefore
+    /// log a resolved rect); agent actions don't.
+    var isVisual: Bool {
+        switch self {
+        case .openURL, .launchApp: return false
+        default: return true
+        }
+    }
 }
 
 /// Parses the model's spatial protocol out of a streaming buffer:

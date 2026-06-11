@@ -37,14 +37,21 @@ enum ProviderSettings {
         UserDefaults.standard.set(model, forKey: modelKey)
     }
 
+    /// The provider that will actually serve the next summon — selection
+    /// plus the zero-setup fallback rule, resolved in one place.
+    static var effective: EffectiveProvider {
+        ProviderRouting.resolve(
+            kindRaw: kind.rawValue,
+            hasAnthropicKey: KeychainStore.load(account: "anthropic") != nil
+        )
+    }
+
     static var displayName: String {
-        switch kind {
-        case .anthropic:
-            return KeychainStore.load(account: "anthropic") == nil
-                ? "Demo (offline) — no key set"
-                : "Claude (\(AnthropicReasoner.defaultModel))"
-        case .openaiCompatible: return "\(model) @ \(baseURL)"
-        case .demo: return "Demo (offline)"
+        switch effective {
+        case .anthropic: return "Claude (\(AnthropicReasoner.defaultModel))"
+        case .openAICompatible: return "\(model) @ \(baseURL)"
+        case .demo(.selected): return "Demo (offline)"
+        case .demo(.missingKey): return "Demo (offline) — no key set"
         }
     }
 }

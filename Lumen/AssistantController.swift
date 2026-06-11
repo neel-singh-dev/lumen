@@ -47,10 +47,7 @@ final class AssistantController {
     /// Resolved per request so a provider switch in the menu takes effect
     /// on the very next summon — including mid-demo hot-swaps.
     private var reasoner: Reasoner {
-        switch ProviderRouting.resolve(
-            kindRaw: ProviderSettings.kind.rawValue,
-            hasAnthropicKey: KeychainStore.load(account: "anthropic") != nil
-        ) {
+        switch ProviderSettings.effective {
         case .anthropic:
             return AnthropicReasoner()
         case .openAICompatible:
@@ -204,22 +201,13 @@ final class AssistantController {
         tourAdvanceArmed = false
         notch.closeSettings()
 
-        let support = FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Lumen", isDirectory: true)
-        guard let session = ReplayStore.loadLast(
+        let support = EventLog.supportDirectory
+        let session = ReplayStore.loadLast(
             eventsURL: support.appendingPathComponent("events.jsonl"),
             conversationsURL: support.appendingPathComponent("conversations.jsonl")
-        ), !session.rawAnswer.isEmpty else {
-            narrator.enqueue(PointParser.Segment(
-                text: "Nothing to replay yet — ask me something first.",
-                annotations: []
-            ))
-            return
-        }
-
-        let segments = PointParser.segments(session.rawAnswer, isFinal: true)
-        guard !segments.isEmpty else {
+        )
+        let segments = PointParser.segments(session?.rawAnswer ?? "", isFinal: true)
+        guard let session, !segments.isEmpty else {
             narrator.enqueue(PointParser.Segment(
                 text: "Nothing to replay yet — ask me something first.",
                 annotations: []
@@ -236,12 +224,7 @@ final class AssistantController {
         // misses can still shift later highlights — acceptable for replay.
         var stops = session.stops
         for segment in segments {
-            let visualCount = segment.annotations.filter { annotation in
-                switch annotation {
-                case .openURL, .launchApp: return false
-                default: return true
-                }
-            }.count
+            let visualCount = segment.annotations.filter(\.isVisual).count
             let take = min(visualCount, stops.count)
             let batch = Array(stops.prefix(take))
             stops.removeFirst(take)
@@ -251,12 +234,7 @@ final class AssistantController {
                     self.notch.showTranscript(segment.text)
                 }
                 for stop in batch {
-                    let kind: PointerOverlayController.TourStop.Kind
-                    switch stop.kind {
-                    case .point: kind = .point
-                    case .box: kind = .box
-                    case .region: kind = .region
-                    }
+                    let kind = PointerOverlayController.TourStop.Kind(rawValue: stop.kind.rawValue) ?? .point
                     self.pointer.present(.init(kind: kind, rect: stop.rect, label: stop.label))
                 }
             }
@@ -595,11 +573,12 @@ final class AssistantController {
             xray.model.update("perceive", status: .failed, detail: "no AX tree")
         }
         xray.model.update("reason", status: .active)
+        let elementsText = snapshot?.promptText
         let historyChars = history.suffix(6).reduce(0) { $0 + $1.question.count + $1.answer.count }
         let estimate = CostEstimator.estimate(
             imagePixelWidth: capture?.pixelWidth,
             imagePixelHeight: capture?.pixelHeight,
-            elementChars: snapshot?.promptText?.count ?? 0,
+            elementChars: elementsText?.count ?? 0,
             historyChars: historyChars,
             questionChars: question.count
         )
@@ -628,6 +607,7 @@ final class AssistantController {
         var buffer = ""
         var fired = 0
         var deliveredSegments = 0
+        var display = ""
         let speechOn = Narrator.isEnabled
         let started = Date()
 
@@ -635,7 +615,7 @@ final class AssistantController {
             for try await delta in reasoner.stream(
                 question: question,
                 capture: capture,
-                elementsText: snapshot?.promptText,
+                elementsText: elementsText,
                 history: history
             ) {
                 if buffer.isEmpty {
@@ -649,7 +629,8 @@ final class AssistantController {
                     }
                 }
                 buffer += delta
-                let (display, annotations) = PointParser.process(buffer)
+                let (streamed, annotations) = PointParser.process(buffer)
+                display = streamed
                 if NotchOverlayController.transcriptEnabled {
                     notch.showTranscript(display)
                 }
@@ -685,7 +666,6 @@ final class AssistantController {
                 }
             }
 
-            let (display, _) = PointParser.process(buffer)
             guard !display.isEmpty || fired > 0 else {
                 // A stream that completes with no visible output is a failure,
                 // not an answer — say so (e.g. a thinking model that burned

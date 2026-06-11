@@ -129,7 +129,7 @@ final class NotchOverlayController {
     /// Collapses everything — transcript, receipt, settings — back to the
     /// invisible handle.
     func clearOverlay() {
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+        withAnimation(DT.spring) {
             model.transcriptVisible = false
             model.transcript = ""
             model.isError = false
