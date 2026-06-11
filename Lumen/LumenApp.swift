@@ -12,6 +12,7 @@ struct LumenApp: App {
         MenuBarExtra("Lumen", systemImage: "rays") {
             Text("Hold ⌃⌥ and ask about your screen")
             Divider()
+            HistoryMenuButton()
             Toggle("Speak answers", isOn: $speakAnswers)
             Toggle("X-Ray mode (live pipeline)", isOn: $xrayMode)
                 .onChange(of: xrayMode) {
@@ -42,6 +43,22 @@ struct LumenApp: App {
             Button("Quit Lumen") {
                 NSApp.terminate(nil)
             }
+        }
+
+        Window("Lumen — History", id: "history") {
+            HistoryView()
+        }
+        .defaultSize(width: 520, height: 480)
+    }
+}
+
+private struct HistoryMenuButton: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button("History…") {
+            openWindow(id: "history")
+            NSApp.activate(ignoringOtherApps: true)
         }
     }
 }

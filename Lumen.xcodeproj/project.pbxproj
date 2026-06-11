@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		08FA74472821213E1DD85C39 /* ConversationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49D4F2E081D7420B54044BDB /* ConversationStore.swift */; };
 		0DC62F05662D7B90FD628714 /* PointerOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5008652FC299845E0BC82123 /* PointerOverlay.swift */; };
 		11734D7722DDD01CB3B58183 /* OverlayPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4DF0975FE6476F287403E55 /* OverlayPanel.swift */; };
 		1587668F604E2A37E27990D2 /* PointParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1391E594655421C6F79C479C /* PointParser.swift */; };
@@ -14,6 +15,7 @@
 		2E19BECB8B34BDD46A26F0E3 /* AXReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0646C792DA6DFF558497050 /* AXReader.swift */; };
 		773FA1361E95D40DD6310993 /* LumenApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9BED7C9127526606A596340 /* LumenApp.swift */; };
 		7CCDCC6B55512A7B0FD6EB6A /* EventLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E6DC07551B9EDCE2F4D7CA /* EventLog.swift */; };
+		8435007734E00E55EC714B2C /* HistoryWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11976F97AA68CC747BE6FAB5 /* HistoryWindow.swift */; };
 		8CBEB53B14C1D46647F16808 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82CA2416103C806FC560933E /* KeychainStore.swift */; };
 		A9581F05F7D830A5B94A4F53 /* OpenAICompatibleReasoner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C121CB428012DD38B99D6A1 /* OpenAICompatibleReasoner.swift */; };
 		ADCC7A9DD14801912930EAE1 /* Transcriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 997F5D73AAAE65A3B0335B1B /* Transcriber.swift */; };
@@ -21,15 +23,18 @@
 		B9DD406AF0A31BD3CAE427AF /* AssistantController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B52B4AC2333DFBA0C08DB196 /* AssistantController.swift */; };
 		C10E34BBD555BCB115A625DB /* Narrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B063CB6CC8FD199740F5D66 /* Narrator.swift */; };
 		C8CBAB7B72615D0675D19B07 /* ScreenCapturer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1ACBE10DE119731821C21A /* ScreenCapturer.swift */; };
+		E0B534EBF866D3C155B1618E /* NotchOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE60B0500F5D871839332C8 /* NotchOverlay.swift */; };
 		EA89A4E1BC58F2F83BCF4F18 /* ProviderSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3FCBEFA855437E1DC340AA9 /* ProviderSettings.swift */; };
 		F983BC5FBEB94B06CAB69892 /* Reasoner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 027B2856B9E68A028D97F9ED /* Reasoner.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		027B2856B9E68A028D97F9ED /* Reasoner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reasoner.swift; sourceTree = "<group>"; };
+		11976F97AA68CC747BE6FAB5 /* HistoryWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryWindow.swift; sourceTree = "<group>"; };
 		1391E594655421C6F79C479C /* PointParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointParser.swift; sourceTree = "<group>"; };
 		2AAC9FFF6959532ABD27E442 /* XRayOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XRayOverlay.swift; sourceTree = "<group>"; };
 		337A3269E47126DC851115EE /* Lumen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Lumen.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		49D4F2E081D7420B54044BDB /* ConversationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationStore.swift; sourceTree = "<group>"; };
 		5008652FC299845E0BC82123 /* PointerOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointerOverlay.swift; sourceTree = "<group>"; };
 		58E6DC07551B9EDCE2F4D7CA /* EventLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventLog.swift; sourceTree = "<group>"; };
 		7C121CB428012DD38B99D6A1 /* OpenAICompatibleReasoner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAICompatibleReasoner.swift; sourceTree = "<group>"; };
@@ -41,6 +46,7 @@
 		AA1ACBE10DE119731821C21A /* ScreenCapturer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCapturer.swift; sourceTree = "<group>"; };
 		B0646C792DA6DFF558497050 /* AXReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXReader.swift; sourceTree = "<group>"; };
 		B52B4AC2333DFBA0C08DB196 /* AssistantController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantController.swift; sourceTree = "<group>"; };
+		BAE60B0500F5D871839332C8 /* NotchOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchOverlay.swift; sourceTree = "<group>"; };
 		D3FCBEFA855437E1DC340AA9 /* ProviderSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderSettings.swift; sourceTree = "<group>"; };
 		F4DF0975FE6476F287403E55 /* OverlayPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayPanel.swift; sourceTree = "<group>"; };
 		FB69623C5BC7D5FECD47DBA0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -58,6 +64,8 @@
 		3E933E68E627099B95BA1535 /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				11976F97AA68CC747BE6FAB5 /* HistoryWindow.swift */,
+				BAE60B0500F5D871839332C8 /* NotchOverlay.swift */,
 				F4DF0975FE6476F287403E55 /* OverlayPanel.swift */,
 				5008652FC299845E0BC82123 /* PointerOverlay.swift */,
 				2AAC9FFF6959532ABD27E442 /* XRayOverlay.swift */,
@@ -77,6 +85,7 @@
 			isa = PBXGroup;
 			children = (
 				B0646C792DA6DFF558497050 /* AXReader.swift */,
+				49D4F2E081D7420B54044BDB /* ConversationStore.swift */,
 				58E6DC07551B9EDCE2F4D7CA /* EventLog.swift */,
 				A13CDE23B9C1246F4A4D6F31 /* HotkeyMonitor.swift */,
 				82CA2416103C806FC560933E /* KeychainStore.swift */,
@@ -172,11 +181,14 @@
 			files = (
 				2E19BECB8B34BDD46A26F0E3 /* AXReader.swift in Sources */,
 				B9DD406AF0A31BD3CAE427AF /* AssistantController.swift in Sources */,
+				08FA74472821213E1DD85C39 /* ConversationStore.swift in Sources */,
 				7CCDCC6B55512A7B0FD6EB6A /* EventLog.swift in Sources */,
+				8435007734E00E55EC714B2C /* HistoryWindow.swift in Sources */,
 				B85FA0CB2B8164AFFBB928BC /* HotkeyMonitor.swift in Sources */,
 				8CBEB53B14C1D46647F16808 /* KeychainStore.swift in Sources */,
 				773FA1361E95D40DD6310993 /* LumenApp.swift in Sources */,
 				C10E34BBD555BCB115A625DB /* Narrator.swift in Sources */,
+				E0B534EBF866D3C155B1618E /* NotchOverlay.swift in Sources */,
 				A9581F05F7D830A5B94A4F53 /* OpenAICompatibleReasoner.swift in Sources */,
 				11734D7722DDD01CB3B58183 /* OverlayPanel.swift in Sources */,
 				1587668F604E2A37E27990D2 /* PointParser.swift in Sources */,

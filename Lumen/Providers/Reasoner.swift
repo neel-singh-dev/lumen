@@ -60,6 +60,11 @@ enum LumenPrompt {
     it — the highlights appear live as you speak, so the order of tags IS the \
     choreography. Up to 8 annotations. Still no preamble.
     - Only annotate things actually visible.
+    - AGENT ACTIONS — only when the user EXPLICITLY asks you to open or \
+    launch something, say what you're doing in one short sentence and append \
+    the action tag: [OPEN:https://full.url] opens a page in their browser; \
+    [LAUNCH:App Name] launches a Mac app. Never volunteer an action they \
+    didn't ask for. One action per answer.
     - If the question has nothing to do with the screen, just answer it.
     """
 }

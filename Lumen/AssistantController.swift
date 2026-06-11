@@ -15,6 +15,7 @@ final class AssistantController {
     private let transcriber = AppleSpeechTranscriber()
     private let narrator = Narrator()
     private let xray = XRayOverlayController()
+    private let notch = NotchOverlayController()
     private let log = EventLog()
     private var turnStart = Date()
 
@@ -53,6 +54,7 @@ final class AssistantController {
             guard let self else { return }
             // A new beat means narration is alive — no hiding mid-tour.
             self.autoHideTask?.cancel()
+            self.notch.set(.speaking)
             for annotation in segment.annotations {
                 self.apply(annotation, capture: self.currentCapture, snapshot: self.currentSnapshot)
             }
@@ -60,6 +62,7 @@ final class AssistantController {
         narrator.onIdle = { [weak self] in
             guard let self else { return }
             self.xray.model.update("narrate", status: .done, ms: self.elapsedMs())
+            self.notch.set(.hidden)
             self.autoHideTask?.cancel()
             self.autoHideTask = Task {
                 try? await Task.sleep(nanoseconds: 12_000_000_000)
@@ -189,6 +192,7 @@ final class AssistantController {
         panel.hide()
         pointer.hide()
         xray.hide()
+        notch.set(.hidden)
     }
 
     func xrayVisibilityChanged() {
@@ -266,10 +270,12 @@ final class AssistantController {
         xray.model.update("listen", status: .active)
         log.append("summon", transcriber.diagnostics())
 
-        panel.show(state: .listening(partial: ""))
+        // Listening lives in the notch — the pill appears at the cursor
+        // once there's something to show (receipt, then the answer).
+        notch.set(.listening(""))
         transcriber.onPartial = { [weak self] text in
             Task { @MainActor in
-                self?.panel.show(state: .listening(partial: text))
+                self?.notch.set(.listening(text))
             }
         }
         transcriber.onError = { [weak self] error in
@@ -281,6 +287,7 @@ final class AssistantController {
             try transcriber.start()
         } catch {
             log.append("stt.start_failed", ["message": error.localizedDescription])
+            notch.set(.hidden)
             panel.show(state: .error("Microphone unavailable: \(error.localizedDescription)"))
             return
         }
@@ -305,10 +312,12 @@ final class AssistantController {
 
     private func answer() async {
         let question = await transcriber.stop()
+        notch.set(.thinking)
         guard !question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             // Don't vanish silently — an empty transcript is the most common
             // symptom of a permissions problem, so say so.
             log.append("transcript.empty")
+            notch.set(.hidden)
             panel.show(state: .error("Didn't catch any speech. Check System Settings → Privacy → Microphone and Speech Recognition for Lumen."))
             autoHideTask = Task {
                 try? await Task.sleep(nanoseconds: 6_000_000_000)
@@ -378,7 +387,11 @@ final class AssistantController {
                     // First token: reasoning latency ends, streaming begins.
                     xray.model.update("reason", status: .done, detail: "first token", ms: elapsedMs())
                     xray.model.update("stream", status: .active)
-                    if speechOn { xray.model.update("narrate", status: .active) }
+                    if speechOn {
+                        xray.model.update("narrate", status: .active)
+                    } else {
+                        notch.set(.answering)
+                    }
                 }
                 buffer += delta
                 let (display, annotations) = PointParser.process(buffer)
@@ -432,8 +445,16 @@ final class AssistantController {
             xray.model.update("stream", status: .done,
                               detail: "\(buffer.count) chars · \(fired) annotations",
                               ms: elapsedMs())
-            if !speechOn { xray.model.update("narrate", status: .done, detail: "muted") }
+            if !speechOn {
+                xray.model.update("narrate", status: .done, detail: "muted")
+                notch.set(.hidden)
+            }
             panel.show(state: .answering(text: display, receipt: capture?.image, done: true))
+            ConversationStore.shared.append(
+                question: question,
+                answer: buffer,
+                provider: ProviderSettings.displayName
+            )
             history.append(Exchange(question: question, answer: buffer))
             if history.count > 6 { history.removeFirst() }
             log.append("answer", [
@@ -455,6 +476,7 @@ final class AssistantController {
             // New summon interrupted this answer — expected.
         } catch {
             log.append("error", ["message": error.localizedDescription])
+            notch.set(.hidden)
             panel.show(state: .error(error.localizedDescription))
             autoHideTask = Task {
                 try? await Task.sleep(nanoseconds: 8_000_000_000)
@@ -498,6 +520,30 @@ final class AssistantController {
                 label: element.label.isEmpty ? element.roleName : element.label
             )
             log.append("annotate.element_box", ["id": "E\(id)", "label": element.label])
+        case .openURL(let raw):
+            // Real agent action: open a page. Border = "I'm acting now."
+            let normalized = raw.hasPrefix("http") ? raw : "https://\(raw)"
+            guard let url = URL(string: normalized) else { return }
+            pointer.setControlBorder(true)
+            NSWorkspace.shared.open(url)
+            log.append("agent.open", ["url": normalized])
+            Task {
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                self.pointer.setControlBorder(false)
+            }
+        case .launchApp(let name):
+            let appURL = URL(fileURLWithPath: "/Applications/\(name).app")
+            guard FileManager.default.fileExists(atPath: appURL.path) else {
+                log.append("agent.launch_miss", ["app": name])
+                return
+            }
+            pointer.setControlBorder(true)
+            NSWorkspace.shared.openApplication(at: appURL, configuration: .init())
+            log.append("agent.launch", ["app": name])
+            Task {
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                self.pointer.setControlBorder(false)
+            }
         }
     }
 

@@ -1,6 +1,6 @@
 import Foundation
 
-/// Spatial annotations the model can emit, in document order.
+/// Spatial annotations and agent actions the model can emit, in document order.
 enum Annotation: Equatable {
     /// Pixel coordinates in the screenshot's space — the fallback when no
     /// AX element fits (canvas apps, images, video).
@@ -9,6 +9,10 @@ enum Annotation: Equatable {
     case elementPoint(id: Int)
     /// Highlight box drawn around an AX element's real bounds.
     case elementBox(id: Int)
+    /// Agent action: open a URL in the default browser.
+    case openURL(String)
+    /// Agent action: launch an application by name.
+    case launchApp(String)
 }
 
 /// Parses the model's spatial protocol out of a streaming buffer:
@@ -21,6 +25,8 @@ enum PointParser {
     private static let pixelPattern = #/\[POINT:(\d+),(\d+):([^\]]*)\]/#
     private static let elementPointPattern = #/\[POINT:E(\d+)\]/#
     private static let elementBoxPattern = #/\[BOX:E(\d+)\]/#
+    private static let openPattern = #/\[OPEN:([^\]]+)\]/#
+    private static let launchPattern = #/\[LAUNCH:([^\]]+)\]/#
     private static let thinkPattern = #/<think>[\s\S]*?<\/think>/#
 
     static func process(_ raw: String) -> (display: String, annotations: [Annotation]) {
@@ -31,6 +37,8 @@ enum PointParser {
             .replacing(pixelPattern, with: "")
             .replacing(elementPointPattern, with: "")
             .replacing(elementBoxPattern, with: "")
+            .replacing(openPattern, with: "")
+            .replacing(launchPattern, with: "")
 
         // Hold back a partially-streamed tag so "[POIN" never flashes.
         if let bracket = display.lastIndex(of: "["),
@@ -72,6 +80,12 @@ enum PointParser {
             if let id = Int(match.1) {
                 found.append((match.range, .elementBox(id: id)))
             }
+        }
+        for match in buffer.matches(of: openPattern) {
+            found.append((match.range, .openURL(String(match.1).trimmingCharacters(in: .whitespaces))))
+        }
+        for match in buffer.matches(of: launchPattern) {
+            found.append((match.range, .launchApp(String(match.1).trimmingCharacters(in: .whitespaces))))
         }
         found.sort { $0.0.lowerBound < $1.0.lowerBound }
         return found
