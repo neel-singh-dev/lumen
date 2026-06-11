@@ -39,13 +39,19 @@ enum ReplayStore {
         else { return nil }
 
         // Annotation events after the most recent summon's transcript.
-        var current: [ReplayStop] = []
+        // Only attach stops when the last transcript text matches the conversation
+        // question — a failed turn may log a transcript with no matching answer,
+        // so its partial stops must not be paired with the older answer.
+        var stopsSinceLastTranscript: [ReplayStop] = []
+        var lastTranscriptMatchesQuestion = false
         for line in eventLines {
             guard let event = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
                   let type = event["type"] as? String
             else { continue }
             if type == "transcript" {
-                current = []
+                stopsSinceLastTranscript = []
+                let text = (event["payload"] as? [String: String])?["text"] ?? ""
+                lastTranscriptMatchesQuestion = (text == question)
                 continue
             }
             guard type.hasPrefix("annotate."),
@@ -62,12 +68,13 @@ enum ReplayStore {
             case "annotate.element_box": kind = .box
             default: kind = .point
             }
-            current.append(ReplayStop(
+            stopsSinceLastTranscript.append(ReplayStop(
                 kind: kind,
                 rect: CGRect(x: x, y: y, width: w, height: h),
                 label: payload["label"] ?? ""
             ))
         }
-        return ReplaySession(question: question, rawAnswer: answer, stops: current)
+        return ReplaySession(question: question, rawAnswer: answer,
+                             stops: lastTranscriptMatchesQuestion ? stopsSinceLastTranscript : [])
     }
 }
