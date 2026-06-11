@@ -23,6 +23,7 @@ struct LumenApp: App {
             Picker("Provider", selection: $providerKind) {
                 Text("Claude (Anthropic)").tag(ProviderKind.anthropic.rawValue)
                 Text("Local — Ollama / OpenAI-compatible").tag(ProviderKind.openaiCompatible.rawValue)
+                Text("Demo (offline)").tag(ProviderKind.demo.rawValue)
             }
             .pickerStyle(.inline)
             Button("Set Anthropic API Key…") {
