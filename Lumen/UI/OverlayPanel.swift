@@ -38,11 +38,15 @@ final class OverlayPanelController {
         let size = hosting.fittingSize
 
         if wasVisible {
-            // Keep the top edge pinned; grow downward as content streams in.
-            let top = panel.frame.maxY
-            let x = panel.frame.origin.x
-            panel.setContentSize(size)
-            panel.setFrameOrigin(NSPoint(x: x, y: top - size.height))
+            // Resize only when the height actually changes — per-token
+            // window churn saturates the main thread.
+            if abs(size.height - panel.frame.height) > 0.5 {
+                // Keep the top edge pinned; grow downward as content streams.
+                let top = panel.frame.maxY
+                let x = panel.frame.origin.x
+                panel.setContentSize(size)
+                panel.setFrameOrigin(NSPoint(x: x, y: top - size.height))
+            }
         } else {
             panel.setContentSize(size)
             position(panel, near: NSEvent.mouseLocation, size: size)
@@ -128,6 +132,7 @@ struct OverlayView: View {
                 Text(partial.isEmpty ? "Listening… release ⌃⌥ when done" : partial)
                     .font(.callout)
                     .foregroundStyle(partial.isEmpty ? .secondary : .primary)
+                    .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         case .thinking(let receipt):
@@ -151,8 +156,12 @@ struct OverlayView: View {
                             .foregroundStyle(.secondary)
                     }
                 } else {
+                    // fixedSize is load-bearing: without it, NSHostingView's
+                    // fittingSize under-measures multi-line text and the
+                    // pill's content overlaps.
                     Text(text)
                         .font(.callout)
+                        .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 if done {
@@ -168,6 +177,7 @@ struct OverlayView: View {
                 Text(message)
                     .font(.callout)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
@@ -196,12 +206,15 @@ struct OverlayView: View {
         }
     }
 
+    /// Coarse key: animates state-KIND transitions only. Keying on the full
+    /// text made every streamed token an animated transaction — a main-
+    /// thread storm that froze the stream and starved the narrator.
     private var stateKey: String {
         switch model.state {
-        case .listening(let p): return "l\(p)"
-        case .thinking: return "t"
-        case .answering(let t, _, let d): return "a\(t)\(d)"
-        case .error(let e): return "e\(e)"
+        case .listening: return "listening"
+        case .thinking: return "thinking"
+        case .answering(_, _, let done): return done ? "answered" : "answering"
+        case .error: return "error"
         }
     }
 

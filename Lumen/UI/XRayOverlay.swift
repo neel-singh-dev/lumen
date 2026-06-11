@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 /// X-ray mode — the Glass Pipeline. A toggleable overlay where Lumen
@@ -63,6 +64,8 @@ final class XRayOverlayController {
 
     let model = XRayModel()
     private var panel: NSPanel?
+    private var hosting: NSHostingView<XRayView>?
+    private var resizeSubscription: AnyCancellable?
 
     func showIfEnabled() {
         guard Self.isEnabled, let screen = NSScreen.main else {
@@ -70,8 +73,9 @@ final class XRayOverlayController {
             return
         }
         if panel == nil {
-            panel = makePanel(on: screen)
+            makePanel(on: screen)
         }
+        resizeToFit()
         panel?.orderFrontRegardless()
     }
 
@@ -79,10 +83,24 @@ final class XRayOverlayController {
         panel?.orderOut(nil)
     }
 
-    private func makePanel(on screen: NSScreen) -> NSPanel {
-        let size = NSSize(width: 280, height: 360)
+    /// The card's content changes mid-turn (timings, the receipt image) —
+    /// keep the panel sized to fit, pinned to the screen's top-right.
+    private func resizeToFit() {
+        guard let panel, let hosting, let screen = NSScreen.main else { return }
+        let size = hosting.fittingSize
+        guard abs(size.height - panel.frame.height) > 0.5 else { return }
+        let frame = screen.visibleFrame
+        panel.setContentSize(size)
+        panel.setFrameOrigin(NSPoint(
+            x: frame.maxX - size.width - 16,
+            y: frame.maxY - size.height - 16
+        ))
+    }
+
+    private func makePanel(on screen: NSScreen) {
+        let hosting = NSHostingView(rootView: XRayView(model: model))
         let panel = NSPanel(
-            contentRect: NSRect(origin: .zero, size: size),
+            contentRect: NSRect(origin: .zero, size: hosting.fittingSize),
             styleMask: [.nonactivatingPanel, .borderless],
             backing: .buffered,
             defer: false
@@ -95,14 +113,15 @@ final class XRayOverlayController {
         panel.backgroundColor = .clear
         panel.hasShadow = true
         panel.isMovableByWindowBackground = true
-        panel.contentView = NSHostingView(rootView: XRayView(model: model))
+        panel.contentView = hosting
+        self.panel = panel
+        self.hosting = hosting
 
-        let frame = screen.visibleFrame
-        panel.setFrameOrigin(NSPoint(
-            x: frame.maxX - size.width - 16,
-            y: frame.maxY - size.height - 16
-        ))
-        return panel
+        resizeSubscription = model.objectWillChange
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                DispatchQueue.main.async { self?.resizeToFit() }
+            }
     }
 }
 
@@ -136,7 +155,8 @@ struct XRayView: View {
                     Image(nsImage: receipt)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(maxWidth: .infinity)
+                        .frame(height: 132)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                         .overlay(
                             RoundedRectangle(cornerRadius: 8)
