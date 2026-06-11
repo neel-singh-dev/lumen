@@ -195,6 +195,8 @@ final class AssistantController {
         narrator.stop()
         pointer.hide()
         autoHideTask?.cancel()
+        tourTimeout?.cancel()
+        tourAdvanceArmed = false
         notch.closeSettings()
 
         let support = FileManager.default
@@ -211,12 +213,31 @@ final class AssistantController {
             return
         }
 
+        let segments = PointParser.segments(session.rawAnswer, isFinal: true)
+        guard !segments.isEmpty else {
+            narrator.enqueue(PointParser.Segment(
+                text: "Nothing to replay yet — ask me something first.",
+                annotations: []
+            ))
+            return
+        }
+
         log.append("replay", ["question": String(session.question.prefix(80))])
         notch.setReceipt(nil, note: "Replaying: \"\(session.question.prefix(40))\"")
 
+        // Pairing assumes logged stops arrive in the same order as the
+        // answer's visual annotations. Annotations that never log rects
+        // (agent actions) are excluded from the count; rare grounding
+        // misses can still shift later highlights — acceptable for replay.
         var stops = session.stops
-        for segment in PointParser.segments(session.rawAnswer, isFinal: true) {
-            let take = min(segment.annotations.count, stops.count)
+        for segment in segments {
+            let visualCount = segment.annotations.filter { annotation in
+                switch annotation {
+                case .openURL, .launchApp: return false
+                default: return true
+                }
+            }.count
+            let take = min(visualCount, stops.count)
             let batch = Array(stops.prefix(take))
             stops.removeFirst(take)
             narrator.enqueue(PointParser.Segment(text: segment.text, annotations: [])) { [weak self] in
