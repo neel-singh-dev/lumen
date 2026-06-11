@@ -62,11 +62,15 @@ final class ScreenCapturer {
         case encodingFailed
     }
 
-    /// Captures the main display, downscaled to ~1280px wide (Clicky parity:
-    /// enough for vision models, cheap to transmit), encoded as JPEG.
+    /// Captures Lumen's anchor display (the notched screen — the same one
+    /// every overlay renders on, so pointer coordinates stay consistent),
+    /// downscaled to ~1280px wide and encoded as JPEG.
     func captureMainDisplay() async throws -> ScreenCapture {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
-        guard let display = content.displays.first else {
+        let anchorID = await MainActor.run { NSScreen.lumen?.displayID }
+        guard let display = content.displays.first(where: { $0.displayID == anchorID })
+            ?? content.displays.first
+        else {
             throw CaptureError.noDisplay
         }
 

@@ -71,6 +71,24 @@ final class NotchOverlayController {
     private var panel: NSPanel?
     private var hosting: NSHostingView<NotchView>?
 
+    init() {
+        // Displays come and go (lid, docks, projectors) — re-anchor to the
+        // notched screen whenever the configuration changes.
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, let screen = NSScreen.lumen else { return }
+                self.model.notchSize = Self.notchMetrics(for: screen)
+                if let panel = self.panel {
+                    self.position(panel, on: screen)
+                }
+            }
+        }
+    }
+
     func set(_ phase: NotchModel.Phase) {
         ensurePanel()
         withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
@@ -121,7 +139,7 @@ final class NotchOverlayController {
     }
 
     private func ensurePanel() {
-        guard panel == nil, let screen = NSScreen.main else { return }
+        guard panel == nil, let screen = NSScreen.lumen else { return }
         model.notchSize = Self.notchMetrics(for: screen)
         let hosting = NSHostingView(rootView: NotchView(model: model, actions: actions))
         let panel = NSPanel(
@@ -150,7 +168,7 @@ final class NotchOverlayController {
     }
 
     private func resize() {
-        guard let panel, let hosting, let screen = NSScreen.main else { return }
+        guard let panel, let hosting, let screen = NSScreen.lumen else { return }
         let size = hosting.fittingSize
         guard abs(size.height - panel.frame.height) > 0.5
             || abs(size.width - panel.frame.width) > 0.5 else { return }

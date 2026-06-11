@@ -41,7 +41,7 @@ final class TourFXController {
     }
 
     private func ensurePanel() {
-        guard panel == nil, let screen = NSScreen.main else { return }
+        guard panel == nil, let screen = NSScreen.lumen else { return }
         let panel = NSPanel(
             contentRect: screen.frame,
             styleMask: [.nonactivatingPanel, .borderless],

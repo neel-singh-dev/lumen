@@ -41,6 +41,19 @@ final class PointerOverlayController {
         enqueue(TourStop(kind: .region, rect: rect, label: label))
     }
 
+    /// Immediate presentation — bypasses the timed pacer entirely. Used
+    /// when SPEECH is the pacer: the annotation must land the instant its
+    /// sentence starts, not on a timer that drifts out of sync.
+    func present(_ stop: TourStop) {
+        guard let screen = NSScreen.lumen else { return }
+        ensurePanel(on: screen)
+        pacer?.cancel()
+        pacer = nil
+        queue.removeAll()
+        model.present(stop)
+        scheduleAutoHide()
+    }
+
     func hide() {
         pacer?.cancel()
         pacer = nil
@@ -51,7 +64,7 @@ final class PointerOverlayController {
 
     /// Agent-mode control handoff border ("I have the cursor").
     func setControlBorder(_ active: Bool) {
-        guard let screen = NSScreen.main else { return }
+        guard let screen = NSScreen.lumen else { return }
         ensurePanel(on: screen)
         model.setControlBorder(active)
         if active { hideTask?.cancel() }
@@ -60,7 +73,7 @@ final class PointerOverlayController {
     // MARK: - Pacing
 
     private func enqueue(_ stop: TourStop) {
-        guard let screen = NSScreen.main else { return }
+        guard let screen = NSScreen.lumen else { return }
         ensurePanel(on: screen)
         queue.append(stop)
         startPacerIfNeeded()

@@ -80,7 +80,7 @@ final class AXReader {
         }
 
         // Screen bounds in AX coordinates (primary display, top-left origin).
-        let screenSize = NSScreen.main?.frame.size ?? .zero
+        let screenSize = NSScreen.lumen?.frame.size ?? .zero
         let bounds = CGRect(origin: .zero, size: screenSize)
 
         var elements: [AXElement] = []

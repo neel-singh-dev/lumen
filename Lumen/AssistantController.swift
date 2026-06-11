@@ -18,6 +18,20 @@ final class AssistantController {
     private let notch = NotchOverlayController()
     private let tourFX = TourFXController()
     private var tourTimeout: Task<Void, Never>?
+
+    /// The onboarding is DIRECTED, not scripted: the user's own summons are
+    /// the page-turns. Chapter 1 invites the first question; answering it
+    /// triggers the X-Ray chapter (explained over the user's own timings);
+    /// the second answer triggers the outro. Escape exits the tour.
+    private enum TourStage {
+        case none
+        case awaitingFirstAsk
+        case awaitingXRayAsk
+    }
+    private var tourStage: TourStage = .none
+    /// Armed by a completed ANSWER (not by tour narration finishing), so
+    /// the director only advances on real user turns.
+    private var tourAdvanceArmed = false
     private let log = EventLog()
     private var turnStart = Date()
 
@@ -65,7 +79,7 @@ final class AssistantController {
             self.autoHideTask?.cancel()
             self.notch.set(.speaking)
             for annotation in segment.annotations {
-                self.apply(annotation, capture: self.currentCapture, snapshot: self.currentSnapshot)
+                self.apply(annotation, capture: self.currentCapture, snapshot: self.currentSnapshot, immediate: true)
             }
         }
         narrator.onIdle = { [weak self] in
@@ -74,10 +88,19 @@ final class AssistantController {
             self.notch.set(.idle)
             self.autoHideTask?.cancel()
             self.autoHideTask = Task {
-                try? await Task.sleep(nanoseconds: 12_000_000_000)
+                // Narration over → wrap up promptly. The user read along
+                // with the voice; nothing left to wait for.
+                try? await Task.sleep(nanoseconds: 3_500_000_000)
                 guard !Task.isCancelled else { return }
                 self.notch.clearOverlay()
                 self.pointer.hide()
+            }
+            if self.tourAdvanceArmed {
+                self.tourAdvanceArmed = false
+                Task {
+                    try? await Task.sleep(nanoseconds: 900_000_000)
+                    self.advanceTour()
+                }
             }
         }
         hotkey.onPushToTalkChanged = { [weak self] isDown in
@@ -137,10 +160,11 @@ final class AssistantController {
             ]
             for (index, element) in targets.enumerated() {
                 beats.append(Beat(text: "Step \(index + 1): \(element.label).") { [weak self] in
-                    self?.pointer.enqueueHighlight(
+                    self?.pointer.present(.init(
+                        kind: .box,
                         rect: element.frame,
                         label: "Step \(index + 1) · \(element.label)"
-                    )
+                    ))
                 })
             }
             beats.append(Beat(text: "When you confirm, this border means I have the cursor. Touch the trackpad at any moment, and control is instantly yours again.") { [weak self] in
@@ -203,6 +227,8 @@ final class AssistantController {
 
         // Keycaps + glow keep inviting until the first summon (which clears
         // them) or a timeout — never forever.
+        tourStage = .awaitingFirstAsk
+        tourAdvanceArmed = false
         tourTimeout = Task { [weak self] in
             try? await Task.sleep(nanoseconds: 60_000_000_000)
             guard !Task.isCancelled else { return }
@@ -211,10 +237,98 @@ final class AssistantController {
         log.append("onboarding.tour")
     }
 
+    // MARK: - Tour director
+
+    private func advanceTour() {
+        switch tourStage {
+        case .none:
+            return
+        case .awaitingFirstAsk:
+            tourStage = .awaitingXRayAsk
+            runXRayChapter()
+        case .awaitingXRayAsk:
+            tourStage = .none
+            runTourOutro()
+        }
+    }
+
+    /// Chapter 2 — Lumen reacts to the user's first answer by opening
+    /// X-Ray and explaining the stages of THAT answer: the auditability
+    /// story taught with the user's own timings.
+    private func runXRayChapter() {
+        UserDefaults.standard.set(true, forKey: XRayOverlayController.enabledKey)
+        xrayVisibilityChanged()
+        log.append("onboarding.xray_chapter")
+
+        let screenWidth = NSScreen.lumen?.frame.width ?? 1440
+        let xrayRect = CGRect(x: screenWidth - 330, y: 8, width: 322, height: 500)
+
+        struct Beat {
+            let text: String
+            let fx: () -> Void
+        }
+        let beats = [
+            Beat(text: "Nice — that's the whole loop. Want to see what just happened under the hood?") { [weak self] in
+                self?.tourFX.set(glow: true)
+            },
+            Beat(text: "This is X-Ray: every stage of the answer you just got — listening, capture, perception, reasoning, the stream — with the real timings.") { [weak self] in
+                self?.pointer.present(.init(kind: .box, rect: xrayRect, label: "X-Ray"))
+            },
+            Beat(text: "It also shows exactly what left this Mac, and where it went. That part never turns off — you can always audit me.") { },
+            Beat(text: "Ask me one more thing, and watch it run live.") { [weak self] in
+                self?.tourFX.set(keycaps: true)
+            },
+        ]
+        for beat in beats {
+            narrator.enqueue(PointParser.Segment(text: beat.text, annotations: [])) { [weak self] in
+                beat.fx()
+                if NotchOverlayController.transcriptEnabled {
+                    self?.notch.showTranscript(beat.text)
+                }
+            }
+        }
+        tourTimeout = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 90_000_000_000)
+            guard !Task.isCancelled else { return }
+            self?.tourFX.clear()
+        }
+    }
+
+    /// Chapter 3 — wrap up and hand the keys over.
+    private func runTourOutro() {
+        log.append("onboarding.outro")
+        struct Beat {
+            let text: String
+            let fx: () -> Void
+        }
+        let beats = [
+            Beat(text: "And that's me.") { [weak self] in
+                self?.tourFX.set(glow: true, keycaps: false)
+            },
+            Beat(text: "Hover the notch anytime: transcripts if you want text, History for everything we've said, and a preview of agent mode.") { },
+            Beat(text: "Try asking me to walk you through your screen sometime. Talk soon.") { },
+        ]
+        for beat in beats {
+            narrator.enqueue(PointParser.Segment(text: beat.text, annotations: [])) { [weak self] in
+                beat.fx()
+                if NotchOverlayController.transcriptEnabled {
+                    self?.notch.showTranscript(beat.text)
+                }
+            }
+        }
+        tourTimeout = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 18_000_000_000)
+            guard !Task.isCancelled else { return }
+            self?.tourFX.clear()
+        }
+    }
+
     func hideOverlays() {
         answerTask?.cancel()
         autoHideTask?.cancel()
         tourTimeout?.cancel()
+        tourStage = .none
+        tourAdvanceArmed = false
         narrator.stop()
         pointer.hide()
         xray.hide()
@@ -306,9 +420,11 @@ final class AssistantController {
         autoHideTask?.cancel()
         narrator.stop()
         pointer.hide()
-        // The user acting is the end of any tour theater.
+        // The user acting clears the theater — but NOT the tour stage:
+        // their question is the page-turn, not an exit.
         tourTimeout?.cancel()
         tourFX.clear()
+        tourAdvanceArmed = false
         turnStart = Date()
         xray.model.reset(provider: ProviderSettings.displayName)
         xray.showIfEnabled()
@@ -378,7 +494,7 @@ final class AssistantController {
         var capture = await captureTask?.value
         let snapshot = await axTask?.value
         if let raw = capture, let snapshot, !snapshot.secureFrames.isEmpty,
-           let screen = NSScreen.main {
+           let screen = NSScreen.lumen {
             capture = raw.redacting(snapshot.secureFrames, screenSize: screen.frame.size)
             log.append("redact", ["secure_fields": "\(snapshot.secureFrames.count)"])
         }
@@ -506,6 +622,18 @@ final class AssistantController {
                 provider: ProviderSettings.displayName
             )
             history.append(Exchange(question: question, answer: buffer))
+
+            // A completed real answer is the tour's page-turn.
+            if tourStage != .none {
+                if speechOn {
+                    tourAdvanceArmed = true
+                } else {
+                    Task {
+                        try? await Task.sleep(nanoseconds: 1_200_000_000)
+                        self.advanceTour()
+                    }
+                }
+            }
             if history.count > 6 { history.removeFirst() }
             log.append("answer", [
                 "text": display,
@@ -539,53 +667,70 @@ final class AssistantController {
 
     /// Renders one annotation. Element-anchored tags use the AX frame as-is
     /// (already in screen points); pixel tags scale from screenshot space.
-    private func apply(_ annotation: Annotation, capture: ScreenCapture?, snapshot: AXReader.Snapshot?) {
+    /// `immediate` bypasses the timed pacer — used when speech is the pacer
+    /// so highlights land exactly when their sentence is spoken.
+    private func apply(_ annotation: Annotation, capture: ScreenCapture?, snapshot: AXReader.Snapshot?, immediate: Bool = false) {
+        func deliver(_ stop: PointerOverlayController.TourStop) {
+            if immediate {
+                pointer.present(stop)
+            } else {
+                switch stop.kind {
+                case .point: pointer.enqueuePoint(atScreenPoint: stop.rect.origin, label: stop.label)
+                case .box: pointer.enqueueHighlight(rect: stop.rect, label: stop.label)
+                case .region: pointer.enqueueRegion(rect: stop.rect, label: stop.label)
+                }
+            }
+        }
+
         switch annotation {
         case .pixelPoint(let x, let y, let label):
             guard let capture, capture.pixelWidth > 0, capture.pixelHeight > 0,
-                  let screen = NSScreen.main else { return }
+                  let screen = NSScreen.lumen else { return }
             let scaleX = screen.frame.width / CGFloat(capture.pixelWidth)
             let scaleY = screen.frame.height / CGFloat(capture.pixelHeight)
-            pointer.enqueuePoint(
-                atScreenPoint: CGPoint(x: CGFloat(x) * scaleX, y: CGFloat(y) * scaleY),
-                label: label
-            )
+            let target = CGPoint(x: CGFloat(x) * scaleX, y: CGFloat(y) * scaleY)
+            deliver(.init(kind: .point, rect: CGRect(origin: target, size: .zero), label: label))
             log.append("annotate.pixel", ["x": "\(x)", "y": "\(y)", "label": label])
         case .elementPoint(let id):
             guard let element = snapshot?.element(withID: id) else {
                 log.append("annotate.miss", ["id": "E\(id)"])
                 return
             }
-            pointer.enqueuePoint(
-                atScreenPoint: CGPoint(x: element.frame.midX, y: element.frame.midY),
-                label: element.label.isEmpty ? element.roleName : element.label
-            )
+            let target = CGPoint(x: element.frame.midX, y: element.frame.midY)
+            deliver(.init(kind: .point, rect: CGRect(origin: target, size: .zero),
+                          label: element.label.isEmpty ? element.roleName : element.label))
             log.append("annotate.element_point", ["id": "E\(id)", "label": element.label])
         case .elementBox(let id):
             guard let element = snapshot?.element(withID: id) else {
                 log.append("annotate.miss", ["id": "E\(id)"])
                 return
             }
-            pointer.enqueueHighlight(
-                rect: element.frame,
-                label: element.label.isEmpty ? element.roleName : element.label
-            )
+            deliver(.init(kind: .box, rect: element.frame,
+                          label: element.label.isEmpty ? element.roleName : element.label))
             log.append("annotate.element_box", ["id": "E\(id)", "label": element.label])
         case .region(let x, let y, let w, let h, let label):
-            // Section highlight — pixel space, scaled to screen points.
+            // Section highlight — pixel space, scaled to screen points,
+            // then clamped so a hallucinated rect can never vanish
+            // off-screen or collapse to nothing.
             guard let capture, capture.pixelWidth > 0, capture.pixelHeight > 0,
-                  let screen = NSScreen.main else { return }
+                  let screen = NSScreen.lumen else { return }
             let scaleX = screen.frame.width / CGFloat(capture.pixelWidth)
             let scaleY = screen.frame.height / CGFloat(capture.pixelHeight)
-            pointer.enqueueRegion(
-                rect: CGRect(
-                    x: CGFloat(x) * scaleX,
-                    y: CGFloat(y) * scaleY,
-                    width: CGFloat(w) * scaleX,
-                    height: CGFloat(h) * scaleY
-                ),
-                label: label
+            var rect = CGRect(
+                x: CGFloat(x) * scaleX,
+                y: CGFloat(y) * scaleY,
+                width: CGFloat(w) * scaleX,
+                height: CGFloat(h) * scaleY
             )
+            let bounds = CGRect(origin: .zero, size: screen.frame.size).insetBy(dx: 4, dy: 4)
+            rect = rect.intersection(bounds)
+            guard !rect.isNull, rect.width > 6, rect.height > 6 else {
+                log.append("annotate.region_invalid", ["label": label])
+                return
+            }
+            if rect.width < 32 { rect = rect.insetBy(dx: (rect.width - 32) / 2, dy: 0) }
+            if rect.height < 26 { rect = rect.insetBy(dx: 0, dy: (rect.height - 26) / 2) }
+            deliver(.init(kind: .region, rect: rect, label: label))
             log.append("annotate.region", ["label": label, "w": "\(w)", "h": "\(h)"])
         case .openURL(let raw):
             // Real agent action: open a page. Border = "I'm acting now."

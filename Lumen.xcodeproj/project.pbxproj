@@ -21,6 +21,7 @@
 		B85FA0CB2B8164AFFBB928BC /* HotkeyMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A13CDE23B9C1246F4A4D6F31 /* HotkeyMonitor.swift */; };
 		B9DD406AF0A31BD3CAE427AF /* AssistantController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B52B4AC2333DFBA0C08DB196 /* AssistantController.swift */; };
 		C10E34BBD555BCB115A625DB /* Narrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B063CB6CC8FD199740F5D66 /* Narrator.swift */; };
+		C46F467234D293E7DFC24312 /* ScreenAnchor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D6004E492E9A5582EFECE97 /* ScreenAnchor.swift */; };
 		C8CBAB7B72615D0675D19B07 /* ScreenCapturer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1ACBE10DE119731821C21A /* ScreenCapturer.swift */; };
 		C8DF9825A7ED190A7572F48E /* TourEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C875A552B4B6F8D6AC8641 /* TourEffects.swift */; };
 		E0B534EBF866D3C155B1618E /* NotchOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE60B0500F5D871839332C8 /* NotchOverlay.swift */; };
@@ -30,6 +31,7 @@
 
 /* Begin PBXFileReference section */
 		027B2856B9E68A028D97F9ED /* Reasoner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reasoner.swift; sourceTree = "<group>"; };
+		0D6004E492E9A5582EFECE97 /* ScreenAnchor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenAnchor.swift; sourceTree = "<group>"; };
 		11976F97AA68CC747BE6FAB5 /* HistoryWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryWindow.swift; sourceTree = "<group>"; };
 		1391E594655421C6F79C479C /* PointParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointParser.swift; sourceTree = "<group>"; };
 		2AAC9FFF6959532ABD27E442 /* XRayOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XRayOverlay.swift; sourceTree = "<group>"; };
@@ -90,6 +92,7 @@
 				A13CDE23B9C1246F4A4D6F31 /* HotkeyMonitor.swift */,
 				82CA2416103C806FC560933E /* KeychainStore.swift */,
 				1391E594655421C6F79C479C /* PointParser.swift */,
+				0D6004E492E9A5582EFECE97 /* ScreenAnchor.swift */,
 				AA1ACBE10DE119731821C21A /* ScreenCapturer.swift */,
 			);
 			path = Core;
@@ -194,6 +197,7 @@
 				0DC62F05662D7B90FD628714 /* PointerOverlay.swift in Sources */,
 				EA89A4E1BC58F2F83BCF4F18 /* ProviderSettings.swift in Sources */,
 				F983BC5FBEB94B06CAB69892 /* Reasoner.swift in Sources */,
+				C46F467234D293E7DFC24312 /* ScreenAnchor.swift in Sources */,
 				C8CBAB7B72615D0675D19B07 /* ScreenCapturer.swift in Sources */,
 				C8DF9825A7ED190A7572F48E /* TourEffects.swift in Sources */,
 				ADCC7A9DD14801912930EAE1 /* Transcriber.swift in Sources */,

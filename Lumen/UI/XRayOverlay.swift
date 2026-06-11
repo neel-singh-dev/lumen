@@ -68,7 +68,7 @@ final class XRayOverlayController {
     private var resizeSubscription: AnyCancellable?
 
     func showIfEnabled() {
-        guard Self.isEnabled, let screen = NSScreen.main else {
+        guard Self.isEnabled, let screen = NSScreen.lumen else {
             hide()
             return
         }
@@ -86,7 +86,7 @@ final class XRayOverlayController {
     /// The card's content changes mid-turn (timings, the receipt image) —
     /// keep the panel sized to fit, pinned to the screen's top-right.
     private func resizeToFit() {
-        guard let panel, let hosting, let screen = NSScreen.main else { return }
+        guard let panel, let hosting, let screen = NSScreen.lumen else { return }
         let size = hosting.fittingSize
         guard abs(size.height - panel.frame.height) > 0.5 else { return }
         let frame = screen.visibleFrame
