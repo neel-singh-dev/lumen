@@ -133,11 +133,20 @@ struct OverlayView: View {
             }
         case .answering(let text, _, let done):
             VStack(alignment: .leading, spacing: 6) {
-                Text(text.isEmpty ? "…" : text)
-                    .font(.body)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                if text.isEmpty {
+                    HStack(spacing: 8) {
+                        ProgressView().controlSize(.small)
+                        Text("Waiting for \(ProviderSettings.kind == .anthropic ? "Claude" : ProviderSettings.model)… (first local answer loads the model — can take a while)")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                } else {
+                    Text(text)
+                        .font(.body)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
                 if done {
-                    Text("⌃⌥ to ask again")
+                    Text("⌃⌥ to ask again · click to dismiss")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }
