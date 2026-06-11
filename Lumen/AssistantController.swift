@@ -68,6 +68,7 @@ final class AssistantController {
         AppleSpeechTranscriber.requestPermissions()
         notch.actions = NotchActions(
             openHistory: { [weak self] in self?.openHistory() },
+            replay: { [weak self] in self?.runReplay() },
             welcomeTour: { [weak self] in self?.runWelcomeTour() },
             agentPreview: { [weak self] in self?.runAgentPreview() },
             xrayChanged: { [weak self] in self?.xrayVisibilityChanged() }
@@ -181,6 +182,56 @@ final class AssistantController {
                     if NotchOverlayController.transcriptEnabled {
                         self?.notch.showTranscript(beat.text)
                     }
+                }
+            }
+        }
+    }
+
+    /// Re-performs the last exchange from the durable logs — voice, captions,
+    /// and highlights at their original rects. No model, no network, no
+    /// capture: replay is just a second consumer of the event stream.
+    func runReplay() {
+        answerTask?.cancel()
+        narrator.stop()
+        pointer.hide()
+        autoHideTask?.cancel()
+        notch.closeSettings()
+
+        let support = FileManager.default
+            .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Lumen", isDirectory: true)
+        guard let session = ReplayStore.loadLast(
+            eventsURL: support.appendingPathComponent("events.jsonl"),
+            conversationsURL: support.appendingPathComponent("conversations.jsonl")
+        ), !session.rawAnswer.isEmpty else {
+            narrator.enqueue(PointParser.Segment(
+                text: "Nothing to replay yet — ask me something first.",
+                annotations: []
+            ))
+            return
+        }
+
+        log.append("replay", ["question": String(session.question.prefix(80))])
+        notch.setReceipt(nil, note: "Replaying: \"\(session.question.prefix(40))\"")
+
+        var stops = session.stops
+        for segment in PointParser.segments(session.rawAnswer, isFinal: true) {
+            let take = min(segment.annotations.count, stops.count)
+            let batch = Array(stops.prefix(take))
+            stops.removeFirst(take)
+            narrator.enqueue(PointParser.Segment(text: segment.text, annotations: [])) { [weak self] in
+                guard let self else { return }
+                if NotchOverlayController.transcriptEnabled {
+                    self.notch.showTranscript(segment.text)
+                }
+                for stop in batch {
+                    let kind: PointerOverlayController.TourStop.Kind
+                    switch stop.kind {
+                    case .point: kind = .point
+                    case .box: kind = .box
+                    case .region: kind = .region
+                    }
+                    self.pointer.present(.init(kind: kind, rect: stop.rect, label: stop.label))
                 }
             }
         }

@@ -63,6 +63,7 @@ final class NotchModel: ObservableObject {
 /// Wiring from the settings panel back into the app.
 struct NotchActions {
     var openHistory: () -> Void = {}
+    var replay: () -> Void = {}
     var welcomeTour: () -> Void = {}
     var agentPreview: () -> Void = {}
     var xrayChanged: () -> Void = {}
@@ -547,6 +548,7 @@ private struct NotchSettingsView: View {
             // Explore grid
             HStack(spacing: 8) {
                 exploreButton("clock.arrow.circlepath", "History", action: actions.openHistory)
+                exploreButton("memories", "Replay", action: actions.replay)
                 exploreButton("sparkles", "Tour", action: actions.welcomeTour)
                 exploreButton("wand.and.stars", "Agent", action: actions.agentPreview)
             }
