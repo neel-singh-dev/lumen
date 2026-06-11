@@ -2,8 +2,6 @@
 
 **The screen assistant you can audit.**
 
-**Start here:** [CLICKY-90.md](CLICKY-90.md) — what I'd ship at Clicky in the next 90 days.
-
 Every screen-watching AI asks you to trust it blindly. Lumen shows you exactly
 what it sees, what it sends, and what it's doing — in real time.
 
