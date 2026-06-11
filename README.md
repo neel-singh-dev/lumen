@@ -2,7 +2,7 @@
 
 **The screen assistant you can audit.**
 
-**Start here:** [CLICKY-90.md](CLICKY-90.md) — what I'd ship at Clicky in the next 90 days. [Measured numbers](docs/MEASUREMENTS.md) from this build's own event log.
+**Start here:** [CLICKY-90.md](CLICKY-90.md) — what I'd ship at Clicky in the next 90 days.
 
 Every screen-watching AI asks you to trust it blindly. Lumen shows you exactly
 what it sees, what it sends, and what it's doing — in real time.
@@ -52,13 +52,10 @@ elements, so pointing accuracy is a property of the system, not the model's
 eyesight; weak local models get strong grounding for free. A streaming
 segmenter splits the answer into narration beats; the on-device voice paces
 the tour, firing each beat's highlights as its audio starts. Every stage event
-lands in an append-only JSONL log — the **event spine** with four consumers:
-the **X-Ray** overlay (live timings + privacy), the **History** window,
-**Replay** (re-performing the last exchange from the logged rects), and
-`scripts/measure.py`, which turns the same log into the numbers in
-[`docs/MEASUREMENTS.md`](docs/MEASUREMENTS.md). **13 unit tests** run hostless
-(a bundle target — no app launch), and four ADRs record the load-bearing
-decisions.
+lands in an append-only JSONL log — the **event spine** with three consumers:
+the **X-Ray** overlay (live timings + privacy), the **History** window, and
+**Replay** (re-performing the last exchange from the logged rects).
+**13 unit tests** run hostless (a bundle target — no app launch).
 
 ```
  ⌃⌥ down ──┬─ Apple Speech (on-device, live partials)
@@ -73,11 +70,8 @@ decisions.
                 ▼                                     ▼
         AnnotationLayer (paced)  ◄── Narrator (on-device TTS, the pacer)
                 ▼
-   Event spine (JSONL) ──► X-Ray · History · Replay · measure.py
+   Event spine (JSONL) ──► X-Ray · History · Replay
 ```
-
-Decision records live in [`docs/adr/`](docs/adr/); the build journal in
-[`docs/ideation/`](docs/ideation/).
 
 ## Build & run
 
@@ -108,9 +102,6 @@ disk); **Local** is any OpenAI-compatible endpoint — for Ollama,
 `ollama pull qwen3-vl`, no key needed; **Demo** is the offline fixture.
 Switching providers takes effect on the next summon — including mid-demo.
 
-`python3 scripts/measure.py` regenerates [`docs/MEASUREMENTS.md`](docs/MEASUREMENTS.md)
-from the live event log (stdlib only).
-
 ## Try these
 
 - *"What app am I looking at?"* — the core loop
@@ -126,7 +117,7 @@ from the live event log (stdlib only).
 Built as a 2-day design-partner exercise. **Shipped, all real:** ⌃⌥ capture, AX
 grounding, all three providers (Claude · Local · Demo), narrated 3-chapter tour,
 secure-field redaction, the notch surface, X-Ray with the EST. PAYLOAD cost line,
-the append-only event spine, and its four consumers — X-Ray, History, Replay,
-and `measure.py`. Agent-mode *execution* is deliberately mocked; the trust UX
+the append-only event spine, and its consumers — X-Ray, History, and Replay.
+Agent-mode *execution* is deliberately mocked; the trust UX
 (plan preview, control-handoff border, instant reclaim) is the part being
 demonstrated. **Deferred:** typed summon, multi-display, and a notarized `.dmg`.
